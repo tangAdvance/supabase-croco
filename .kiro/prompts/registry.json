@@ -1,0 +1,127 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-08",
+  "prompts": {
+    "chat": {
+      "beginner": {
+        "version": "1.0.0",
+        "file": "chat/beginner.md",
+        "ageRange": [6, 9],
+        "description": "启蒙期对话提示词，适合 6-9 岁儿童",
+        "status": "active"
+      },
+      "explorer": {
+        "version": "1.0.0",
+        "file": "chat/explorer.md",
+        "ageRange": [10, 12],
+        "description": "探索期对话提示词，适合 10-12 岁少年",
+        "status": "active"
+      },
+      "advanced": {
+        "version": "1.0.0",
+        "file": "chat/advanced.md",
+        "ageRange": [13, 15],
+        "description": "深化期对话提示词，适合 13-15 岁青少年",
+        "status": "active"
+      }
+    },
+    "podcast": {
+      "beginner": {
+        "version": "1.0.0",
+        "file": "podcast/beginner.md",
+        "ageRange": [6, 9],
+        "description": "启蒙期播客提示词，适合 6-9 岁儿童",
+        "status": "active"
+      },
+      "explorer": {
+        "version": "1.0.0",
+        "file": "podcast/explorer.md",
+        "ageRange": [10, 12],
+        "description": "探索期播客提示词，适合 10-12 岁少年",
+        "status": "pending"
+      },
+      "advanced": {
+        "version": "1.0.0",
+        "file": "podcast/advanced.md",
+        "ageRange": [13, 15],
+        "description": "深化期播客提示词，适合 13-15 岁青少年",
+        "status": "pending"
+      }
+    },
+    "image": {
+      "beginner": {
+        "version": "1.0.0",
+        "file": "image/beginner.md",
+        "ageRange": [6, 9],
+        "description": "启蒙期图片生成提示词",
+        "status": "planned"
+      },
+      "explorer": {
+        "version": "1.0.0",
+        "file": "image/explorer.md",
+        "ageRange": [10, 12],
+        "description": "探索期图片生成提示词",
+        "status": "planned"
+      },
+      "advanced": {
+        "version": "1.0.0",
+        "file": "image/advanced.md",
+        "ageRange": [13, 15],
+        "description": "深化期图片生成提示词",
+        "status": "planned"
+      }
+    },
+    "article": {
+      "beginner": {
+        "version": "1.0.0",
+        "file": "article/beginner.md",
+        "ageRange": [6, 9],
+        "description": "启蒙期文章生成提示词",
+        "status": "planned"
+      },
+      "explorer": {
+        "version": "1.0.0",
+        "file": "article/explorer.md",
+        "ageRange": [10, 12],
+        "description": "探索期文章生成提示词",
+        "status": "planned"
+      },
+      "advanced": {
+        "version": "1.0.0",
+        "file": "article/advanced.md",
+        "ageRange": [13, 15],
+        "description": "深化期文章生成提示词",
+        "status": "planned"
+      }
+    },
+    "music": {
+      "beginner": {
+        "version": "1.0.0",
+        "file": "music/beginner.md",
+        "ageRange": [6, 9],
+        "description": "启蒙期音乐生成提示词",
+        "status": "planned"
+      },
+      "explorer": {
+        "version": "1.0.0",
+        "file": "music/explorer.md",
+        "ageRange": [10, 12],
+        "description": "探索期音乐生成提示词",
+        "status": "planned"
+      },
+      "advanced": {
+        "version": "1.0.0",
+        "file": "music/advanced.md",
+        "ageRange": [13, 15],
+        "description": "深化期音乐生成提示词",
+        "status": "planned"
+      }
+    }
+  },
+  "metadata": {
+    "totalPrompts": 15,
+    "activePrompts": 3,
+    "pendingPrompts": 2,
+    "plannedPrompts": 10
+  }
+}

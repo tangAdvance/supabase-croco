@@ -1,0 +1,644 @@
+{
+  "name": "播客推送系统 MVP",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "定时器 - 每天7点",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "characters",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_active",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "id": "get-characters",
+      "name": "查询活跃角色",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-characters",
+      "name": "循环角色",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "users",
+        "returnAll": true
+      },
+      "id": "get-users",
+      "name": "查询所有用户",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "loop-users",
+      "name": "循环用户",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "character_user_memories",
+        "returnAll": false,
+        "limit": 5,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "character_id",
+              "keyValue": "={{ $('循环角色').item.json.id }}"
+            },
+            {
+              "keyName": "user_id",
+              "keyValue": "={{ $('循环用户').item.json.id }}"
+            }
+          ]
+        },
+        "sort": {
+          "fields": [
+            {
+              "keyName": "importance",
+              "order": "DESC"
+            }
+          ]
+        }
+      },
+      "id": "get-memories",
+      "name": "查询用户记忆",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取角色和用户信息\nconst character = $('循环角色').item.json;\nconst user = $('循环用户').item.json;\nconst memories = $input.all();\n\n// 判断用户年龄阶段\nfunction getAgeStage(age) {\n  if (age >= 6 && age <= 9) {\n    return {\n      stage: 'beginner',\n      name: '启蒙期',\n      style: '简单易懂，使用童话故事、动物比喻和生动的画面感。多用短句，避免复杂概念。'\n    };\n  } else if (age >= 10 && age <= 12) {\n    return {\n      stage: 'explorer',\n      name: '探索期',\n      style: '逻辑推理，使用生活案例和实验思维。引导思考，适当使用科学术语并解释。'\n    };\n  } else if (age >= 13 && age <= 15) {\n    return {\n      stage: 'advanced',\n      name: '深化期',\n      style: '跨学科关联，抽象思维和深度类比。使用专业术语，引导批判性思考。'\n    };\n  } else {\n    return {\n      stage: 'explorer',\n      name: '探索期',\n      style: '逻辑推理，使用生活案例和实验思维。引导思考，适当使用科学术语并解释。'\n    };\n  }\n}\n\n// 获取年龄阶段\nconst ageStage = getAgeStage(user.age || 10);\n\n// 格式化用户记忆\nlet memoriesText = '';\nif (memories.length > 0) {\n  memoriesText = memories.map(m => `- ${m.json.memory_key}: ${m.json.memory_value}`).join('\\n');\n} else {\n  memoriesText = '（暂无记忆）';\n}\n\n// 构建 Tavily 搜索查询\nconst expertise = character.expertise && character.expertise.length > 0 \n  ? character.expertise[0] \n  : '科学知识';\n\nconst interests = user.interests && user.interests.length > 0\n  ? user.interests.join('、')\n  : '学习';\n\nconst searchQuery = `${expertise} ${interests} 儿童教育 最新内容`;\n\nreturn {\n  json: {\n    character: character,\n    user: user,\n    ageStage: ageStage,\n    memoriesText: memoriesText,\n    searchQuery: searchQuery,\n    expertise: expertise,\n    interests: interests\n  }\n};"
+      },
+      "id": "prepare-context",
+      "name": "准备上下文",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "={{ $env.TAVILY_API_KEY }}"
+            },
+            {
+              "name": "query",
+              "value": "={{ $json.searchQuery }}"
+            },
+            {
+              "name": "search_depth",
+              "value": "basic"
+            },
+            {
+              "name": "max_results",
+              "value": "3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "tavily-search",
+      "name": "Tavily 搜索",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取上下文和搜索结果\nconst context = $('准备上下文').item.json;\nconst searchResults = $input.item.json;\n\n// 提取搜索结果内容\nlet searchContent = '';\nif (searchResults.results && searchResults.results.length > 0) {\n  searchContent = searchResults.results.map(r => {\n    return `标题：${r.title}\\n内容：${r.content}\\n来源：${r.url}`;\n  }).join('\\n\\n');\n} else {\n  searchContent = '暂无搜索结果，请根据角色专长自由创作。';\n}\n\n// 构建 AI Prompt\nconst prompt = `你是 ${context.character.name}，一个专注于 ${context.expertise} 的 AI 助手。\n\n**用户信息：**\n- 姓名：${context.user.name || '小朋友'}\n- 年龄：${context.user.age || 10} 岁\n- 年龄阶段：${context.ageStage.name}\n- 兴趣：${context.interests}\n- 年级：${context.user.grade || '未知'}\n\n**我对用户的了解：**\n${context.memoriesText}\n\n**今日主题内容：**\n${searchContent}\n\n**任务：**\n请根据以上信息，为这位用户创作一篇个性化的播客文章。\n\n**文字风格要求（${context.ageStage.name}）：**\n${context.ageStage.style}\n\n**内容要求：**\n1. 结合用户的兴趣和记忆，让内容更个性化\n2. 使用 ${context.character.name} 的语气和风格：${context.character.personality || '亲切友好'}\n3. 文章长度：500-800 字\n4. 适合转换为 3-5 分钟的音频\n5. 开头要吸引人，结尾要有启发\n6. 适当提及用户的名字，增加亲切感\n7. 内容要积极向上，富有教育意义\n\n**输出格式：**\n只输出播客文章内容，不要包含任何其他说明、标记或格式。直接输出可以朗读的文字。`;\n\nreturn {\n  json: {\n    prompt: prompt,\n    context: context,\n    searchResults: searchResults\n  }\n};"
+      },
+      "id": "build-prompt",
+      "name": "构建 AI Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "id": "generate-article",
+      "name": "AI 生成文章",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "deepseek-model",
+      "name": "DeepSeek Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        500
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "your-deepseek-credentials-id",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "={{ $env.ELEVENLABS_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $('AI 生成文章').item.json.output }}\",\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.5,\n    \"similarity_boost\": 0.75\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "text-to-speech",
+      "name": "文字转语音",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucket": {
+          "__rl": true,
+          "value": "podcasts",
+          "mode": "list",
+          "cachedResultName": "podcasts"
+        },
+        "fileName": "={{ $now.format('yyyy-MM-dd') }}/{{ $('准备上下文').item.json.character.slug }}_{{ $('准备上下文').item.json.user.id }}.mp3",
+        "options": {
+          "contentType": "audio/mpeg"
+        }
+      },
+      "id": "upload-audio",
+      "name": "上传音频",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取所有需要的数据\nconst context = $('准备上下文').item.json;\nconst article = $('AI 生成文章').item.json.output;\nconst audioUpload = $input.item.json;\n\n// 生成标题\nconst title = `${context.character.name}的${context.expertise}小课堂 - ${$now.format('yyyy年MM月dd日')}`;\n\n// 生成摘要（取文章前100字）\nconst summary = article.substring(0, 100) + '...';\n\n// 生成标签\nconst tags = [\n  context.expertise,\n  context.ageStage.name,\n  ...context.user.interests || []\n];\n\n// 目标年级\nconst targetGrades = [context.user.grade || '全年级'];\n\n// 音频 URL\nconst audioUrl = audioUpload.publicUrl || audioUpload.path;\n\n// 估算音频时长（按每分钟150字计算）\nconst durationSeconds = Math.ceil((article.length / 150) * 60);\n\nreturn {\n  json: {\n    title: title,\n    content: article,\n    audio_url: audioUrl,\n    summary: summary,\n    tags: tags,\n    target_grades: targetGrades,\n    duration_seconds: durationSeconds,\n    is_published: true,\n    publish_date: $now.format('yyyy-MM-dd'),\n    // 保存上下文用于后续插入 user_podcast_feeds\n    user_id: context.user.id,\n    character_id: context.character.id\n  }\n};"
+      },
+      "id": "prepare-podcast-data",
+      "name": "准备播客数据",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "podcasts",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.title }}",
+            "content": "={{ $json.content }}",
+            "audio_url": "={{ $json.audio_url }}",
+            "summary": "={{ $json.summary }}",
+            "tags": "={{ $json.tags }}",
+            "target_grades": "={{ $json.target_grades }}",
+            "duration_seconds": "={{ $json.duration_seconds }}",
+            "is_published": "={{ $json.is_published }}",
+            "publish_date": "={{ $json.publish_date }}"
+          }
+        },
+        "options": {
+          "returnFields": "id"
+        }
+      },
+      "id": "insert-podcast",
+      "name": "保存播客",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "user_podcast_feeds",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('准备播客数据').item.json.user_id }}",
+            "podcast_id": "={{ $json.id }}",
+            "is_read": false,
+            "pushed_at": "={{ $now.toISO() }}"
+          }
+        }
+      },
+      "id": "insert-feed",
+      "name": "保存推送记录",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "your-supabase-credentials-id",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "loop-users-end",
+      "name": "循环用户结束",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "loop-characters-end",
+      "name": "循环角色结束",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "定时器 - 每天7点": {
+      "main": [
+        [
+          {
+            "node": "查询活跃角色",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询活跃角色": {
+      "main": [
+        [
+          {
+            "node": "循环角色",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环角色": {
+      "main": [
+        [
+          {
+            "node": "查询所有用户",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "循环角色结束",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询所有用户": {
+      "main": [
+        [
+          {
+            "node": "循环用户",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环用户": {
+      "main": [
+        [
+          {
+            "node": "查询用户记忆",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "循环用户结束",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询用户记忆": {
+      "main": [
+        [
+          {
+            "node": "准备上下文",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备上下文": {
+      "main": [
+        [
+          {
+            "node": "Tavily 搜索",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily 搜索": {
+      "main": [
+        [
+          {
+            "node": "构建 AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建 AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "AI 生成文章",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 生成文章": {
+      "main": [
+        [
+          {
+            "node": "文字转语音",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI 生成文章",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "文字转语音": {
+      "main": [
+        [
+          {
+            "node": "上传音频",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "上传音频": {
+      "main": [
+        [
+          {
+            "node": "准备播客数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备播客数据": {
+      "main": [
+        [
+          {
+            "node": "保存播客",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存播客": {
+      "main": [
+        [
+          {
+            "node": "保存推送记录",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存推送记录": {
+      "main": [
+        [
+          {
+            "node": "循环用户结束",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环用户结束": {
+      "main": [
+        [
+          {
+            "node": "循环用户",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环角色结束": {
+      "main": [
+        [
+          {
+            "node": "循环角色",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "1"
+}

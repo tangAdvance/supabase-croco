@@ -1,0 +1,12 @@
+# Supabase
+.branches
+.temp
+.env
+.env.local
+
+# Deno
+.deno/
+
+# Environment files (sensitive)
+functions/**/.env.local
+functions/**/.env.production
