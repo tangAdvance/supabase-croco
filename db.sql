@@ -33,6 +33,7 @@ CREATE TABLE public.characters (
   sort_order integer DEFAULT 0,
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
+  greeting text,
   CONSTRAINT characters_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.conversations (
@@ -56,15 +57,28 @@ CREATE TABLE public.messages (
   character_id uuid,
   role text NOT NULL CHECK (role = ANY (ARRAY['user'::text, 'assistant'::text])),
   content text NOT NULL,
-  intent_type text CHECK (intent_type = ANY (ARRAY['homework'::text, 'knowledge'::text, 'chat'::text, 'emotional'::text])),
-  mode text CHECK (mode = ANY (ARRAY['socratic'::text, 'normal'::text, 'encourage'::text])),
+  intent_type text CHECK (intent_type = ANY (ARRAY['homework'::text, 'knowledge'::text, 'chat'::text, 'emotional'::text, 'image_generation'::text])),
+  mode text CHECK (mode = ANY (ARRAY['socratic'::text, 'normal'::text, 'encourage'::text, 'creative'::text, 'emotional'::text])),
   metadata jsonb,
   tokens_used integer,
   created_at timestamp without time zone DEFAULT now(),
+  is_read boolean DEFAULT false,
   CONSTRAINT messages_pkey PRIMARY KEY (id),
   CONSTRAINT messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id),
   CONSTRAINT messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
   CONSTRAINT messages_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id)
+);
+CREATE TABLE public.parents (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  auth_id uuid NOT NULL UNIQUE,
+  phone text,
+  email text,
+  name text,
+  avatar_url text,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT parents_pkey PRIMARY KEY (id),
+  CONSTRAINT parents_auth_id_fkey FOREIGN KEY (auth_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.podcasts (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -79,7 +93,29 @@ CREATE TABLE public.podcasts (
   publish_date date DEFAULT CURRENT_DATE,
   is_published boolean DEFAULT false,
   created_at timestamp without time zone DEFAULT now(),
+  cover_image_url text,
   CONSTRAINT podcasts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public. (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  character_id uuid NOT NULL,
+  conversation_id uuid NOT NULL,
+  image_url text NOT NULL,
+  thumbnail_url text,user_generated_images
+  prompt text NOT NULL,
+  style text NOT NULL,
+  emotion text NOT NULL,
+  user_description text NOT NULL,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  is_favorite boolean DEFAULT false,
+  is_deleted boolean DEFAULT false,
+  created_at timestamp without time zone DEFAULT now(),
+  updated_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT user_generated_images_pkey PRIMARY KEY (id),
+  CONSTRAINT user_generated_images_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT user_generated_images_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id),
+  CONSTRAINT user_generated_images_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES public.conversations(id)
 );
 CREATE TABLE public.user_podcast_feeds (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -91,8 +127,8 @@ CREATE TABLE public.user_podcast_feeds (
   pushed_at timestamp without time zone DEFAULT now(),
   read_at timestamp without time zone,
   CONSTRAINT user_podcast_feeds_pkey PRIMARY KEY (id),
-  CONSTRAINT user_podcast_feeds_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
-  CONSTRAINT user_podcast_feeds_podcast_id_fkey FOREIGN KEY (podcast_id) REFERENCES public.podcasts(id)
+  CONSTRAINT user_podcast_feeds_podcast_id_fkey FOREIGN KEY (podcast_id) REFERENCES public.podcasts(id),
+  CONSTRAINT user_podcast_feeds_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.user_podcast_preferences (
   user_id uuid NOT NULL,
@@ -126,6 +162,12 @@ CREATE TABLE public.users (
   avatar_url text,
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
+  parent_id uuid,
+  gender text CHECK (gender = ANY (ARRAY['male'::text, 'female'::text, 'other'::text])),
+  birth_date date,
+  settings jsonb DEFAULT '{"textSize": "medium", "voiceSpeed": 1.0, "soundEffects": true, "dailyTimeLimit": 60, "backgroundMusic": true, "allowedCharacters": []}'::jsonb,
+  stats jsonb DEFAULT '{"lastActiveAt": null, "cardsCompleted": 0, "weeklyActivity": [], "messagesExchanged": 0, "totalLearningTime": 0}'::jsonb,
   CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT users_auth_id_fkey FOREIGN KEY (auth_id) REFERENCES auth.users(id)
+  CONSTRAINT users_auth_id_fkey FOREIGN KEY (auth_id) REFERENCES auth.users(id),
+  CONSTRAINT users_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.parents(id)
 );

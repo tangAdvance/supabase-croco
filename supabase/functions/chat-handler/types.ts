@@ -17,7 +17,8 @@ export interface ChatResponse {
   mode: string;            // 对话模式
   timestamp: string;       // 响应时间戳
   conversationId: string;  // 会话 ID
-  messageId: string;       // 消息 ID
+  messageId: string;       // AI 消息 ID
+  userMessageId: string;   // 用户消息 ID
 }
 
 export interface ErrorResponse {
@@ -34,6 +35,7 @@ export interface N8NRequest {
   message: string;                    // 用户消息
   userId: string;                     // 用户 ID
   conversationId: string;             // 会话 ID
+  userMessageId: string;              // 用户消息 ID (新增)
   userProfile: UserProfile;
   character: Character;
   history: HistoryMessage[];
@@ -43,11 +45,13 @@ export interface N8NResponse {
   response: string;        // AI 生成的回复
   intentType: string;      // 识别的意图类型
   mode: string;           // 使用的对话模式
+  aiMessageId: string;     // AI 消息 ID (由 n8n 存储后返回)
   memories?: Array<{      // AI 提取的记忆（可选）
     memory_key: string;
     memory_value: string;
     importance: number;
   }>;
+  metadata?: Record<string, any>;  // 元数据（用于图片生成等功能）
 }
 
 // ============================================================================

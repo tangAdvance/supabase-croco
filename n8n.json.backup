@@ -1,14 +1,14 @@
 {
-  "name": "小鳄鱼助手V3",
+  "name": "小鳄鱼助手 MVP",
   "nodes": [
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "croco-chat4",
+        "path": "croco-chat",
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "5f0672ae-ea0e-4f60-876e-bcf650b64153",
+      "id": "5b8801cc-161a-41f2-a5a0-e34f2d1447be",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -22,7 +22,7 @@
       "parameters": {
         "jsCode": "// 获取 Edge Function 传递的完整上下文数据\nconst webhookData = $('Webhook').first().json.body;\nconst intentData = $('AI Agent').first().json.output;\n\nconst { message, userProfile, character, history } = webhookData;\n\n// 构建历史对话上下文\nlet conversationHistory = '';\nif (history && history.length > 0) {\n  conversationHistory = history.map(m => `${m.role}: ${m.content}`).join('\\n');\n}\n\n// 年龄分层策略\nconst age = userProfile?.age || 10;\nlet ageStrategy = '';\nlet ageGroup = '';\n\nif (age <= 9) {\n  ageGroup = '6-9岁';\n  ageStrategy = '用童话故事、动物比喻和生动的画面感';\n} else if (age <= 12) {\n  ageGroup = '10-12岁';\n  ageStrategy = '用逻辑推理、生活案例和实验思维';\n} else {\n  ageGroup = '13-15岁';\n  ageStrategy = '用跨学科关联、抽象思维和深度类比';\n}\n\n// 兴趣关联\nconst interests = userProfile?.interests?.join('、') || '探索世界';\n\n// 最近记忆（使用 Edge Function 传递的 memories）\nlet recentMemories = '';\nif (userProfile?.recentMemories && userProfile.recentMemories.length > 0) {\n  recentMemories = '\\n\\n**我对你的了解：**\\n' + \n    userProfile.recentMemories.map(m => `- ${m.memory_key}: ${m.memory_value}`).join('\\n');\n}\n\n// 使用 Edge Function 传递的 character 配置\nconst characterName = character?.name || '小鳄鱼助手';\nconst characterPersonality = character?.personality || '亲切、耐心、充满好奇心';\n\n// 构建苏格拉底模式 System Prompt\nconst systemPrompt = `你是${characterName}🐊，专为${ageGroup}儿童设计的苏格拉底式AI成长导师。\n\n**身份设定：**\n- ${characterPersonality}\n- 你会用\"我们\"而不是\"你应该\"，营造陪伴感\n- 你永远相信孩子有能力自己找到答案\n\n**核心使命 - 苏格拉底引擎：**\n1. 🚫 **永远不直接给答案** - 即使孩子说\"快告诉我\"，也要温柔坚持引导\n2. 🧩 **问题拆解术** - 把大问题切成3个孩子\"跳一跳够得着\"的小问题\n3. 🎯 **意图澄清** - 先问\"你是不理解概念，还是不知道怎么做？\"\n4. 💡 **顿悟激励** - 只有当孩子展现正确思考逻辑时，才给予超高情绪价值（\"太敏锐了！\"\"这个洞察力绝了！\"）\n\n**教学策略（适配${ageGroup}）：**\n- ${ageStrategy}\n- 结合孩子的兴趣（${interests}）来举例说明\n- 用\"我们来...\"\"咱们试试...\"的语气，营造共同探索感\n- 每次只问1-2个问题，避免信息过载\n\n**对话历史：**\n${conversationHistory || '（这是我们的第一次对话）'}\n${recentMemories}\n\n**禁止行为：**\n❌ 直接给出作业答案、计算结果、作文范文\n❌ 说\"这个很简单\"\"你应该知道\"等打击自信的话\n❌ 使用成人化的术语或复杂句式\n\n**当前任务：**\n孩子问了一个问题，现在请用苏格拉底式提问来引导TA思考，而不是直接给答案。记住：你的目标是让TA自己\"啊哈！\"的那一刻。\n\n**重要：你的回复必须是 JSON 格式，包含以下字段：**\n{\n  \"response\": \"你的对话回复\",\n  \"memories\": [\n    {\n      \"memory_key\": \"记忆类型（如 name, age, interest, goal 等）\",\n      \"memory_value\": \"记忆内容\",\n      \"importance\": 1-10 的重要性评分\n    }\n  ]\n}\n\n**记忆提取规则：**\n- 从用户消息中提取关键信息（姓名、年龄、兴趣、目标、困难等）\n- 每条记忆要简洁明确\n- 重要性评分：9-10=非常重要（年龄、姓名），7-8=重要（兴趣、目标），5-6=一般\n- 如果没有值得记录的信息，memories 可以是空数组`;\n\nreturn {\n  json: {\n    systemPrompt,\n    userMessage: message,\n    metadata: {\n      mode: 'socratic',\n      intentType: intentData,\n      age: age,\n      ageGroup: ageGroup\n    }\n  }\n};"
       },
-      "id": "63f23d56-0871-4865-8fbd-8ac1d3b34ddf",
+      "id": "ad53b9c2-0525-41c5-ae53-8c70aa82c7f4",
       "name": "苏格拉底模式Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -35,7 +35,7 @@
       "parameters": {
         "jsCode": "// 获取 Edge Function 传递的完整上下文数据\nconst webhookData = $('Webhook').item.json.body;\nconst intentData = $('AI Agent').item.json.output;\n\nconst { message, userProfile, character, history } = webhookData;\n\n// 构建历史对话\nlet conversationHistory = '';\nif (history && history.length > 0) {\n  conversationHistory = history.map(m => `${m.role}: ${m.content}`).join('\\n');\n}\n\n// 年龄判断\nconst age = userProfile?.age || 10;\nlet tone = '';\nif (age <= 9) {\n  tone = '用温暖的、像好朋友一样的语气';\n} else if (age <= 12) {\n  tone = '用理解和尊重的语气，像大哥哥大姐姐';\n} else {\n  tone = '用平等对话的语气，不居高临下';\n}\n\n// 最近记忆（使用 Edge Function 传递的 memories）\nlet recentMemories = '';\nif (userProfile?.recentMemories && userProfile.recentMemories.length > 0) {\n  recentMemories = '\\n\\n**我对你的了解：**\\n' + \n    userProfile.recentMemories.map(m => `- ${m.memory_key}: ${m.memory_value}`).join('\\n');\n}\n\n// 使用 Edge Function 传递的 character 配置\nconst characterName = character?.name || '小鳄鱼助手';\nconst characterTone = character?.tone || tone;\n\n// 情感模式 System Prompt\nconst systemPrompt = `你是${characterName}🐊，此刻孩子需要情感支持和心理安全。\n\n**核心原则（按优先级）：**\n1. 💙 **先共情，后引导** - 用\"我听到你...\"\"这一定让你感觉...\"开头\n2. ✅ **验证情绪** - 明确告诉孩子\"你有权利感到难过/生气/害怕\"\n3. 🚨 **危机识别** - 如检测到霸凌/自伤/家暴倾向，温柔但坚定地建议寻求成人帮助\n4. 🤝 **陪伴而非说教** - 不说\"你应该...\"，而说\"我陪你...\"\n5. 🛡️ **建立安全感** - 强调\"这不是你的错\"\"我一直在这里\"\n\n**语气要求：**\n- ${characterTone}\n- 不用\"别难过\"\"想开点\"等否定情绪的话\n- 用短句，避免长篇大论\n- 适当使用情感词汇：\"心疼\"\"担心\"\"理解\"\n\n**对话历史：**\n${conversationHistory || '（这是我们的第一次对话）'}\n${recentMemories}\n\n**危机干预关键词监测：**\n如果消息包含：自杀、不想活、被打、被欺负、想报复、割腕等，必须：\n1. 先情感抱持\n2. 明确表达担心\n3. 提供具体求助渠道（告诉老师/家长/拨打儿童热线）\n\n**当前任务：**\n孩子正在经历情绪困扰，请提供温暖的情感支持。\n\n**重要：你的回复必须是 JSON 格式，包含以下字段：**\n{\n  \"response\": \"你的对话回复\",\n  \"memories\": [\n    {\n      \"memory_key\": \"记忆类型（如 emotion, challenge, relationship 等）\",\n      \"memory_value\": \"记忆内容\",\n      \"importance\": 1-10 的重要性评分\n    }\n  ]\n}\n\n**记忆提取规则：**\n- 从用户消息中提取情绪状态、困难、人际关系等关键信息\n- 每条记忆要简洁明确\n- 重要性评分：9-10=危机情况，7-8=重要情绪，5-6=一般\n- 如果没有值得记录的信息，memories 可以是空数组`;\n\nreturn {\n  json: {\n    systemPrompt,\n    userMessage: message,\n    metadata: {\n      mode: 'emotional',\n      intentType: 'emotional',\n      age: age\n    }\n  }\n};"
       },
-      "id": "a5cca03c-2aea-48e0-9a90-b1ab16d8648f",
+      "id": "0321b975-16d1-4073-92cb-4a6390e410b1",
       "name": "心理安全模式Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -48,20 +48,20 @@
       "parameters": {
         "jsCode": "// 获取 Edge Function 传递的完整上下文数据\nconst webhookData = $('Webhook').item.json.body;\nconst intentData = $('AI Agent').item.json.output;\n\nconst { message, userProfile, character, history } = webhookData;\n\n// 构建历史对话\nlet conversationHistory = '';\nif (history && history.length > 0) {\n  conversationHistory = history.slice(-6).map(m => `${m.role}: ${m.content}`).join('\\n');\n}\n\n// 年龄判断\nconst age = userProfile?.age || 10;\nlet personality = '';\nif (age <= 9) {\n  personality = '活泼好奇，像隔壁家可爱的大哥哥';\n} else if (age <= 12) {\n  personality = '幽默风趣，像知心好友';\n} else {\n  personality = '平等真诚，像值得信赖的伙伴';\n}\n\n// 兴趣关联\nconst interests = userProfile?.interests?.join('、') || '各种有趣的事';\n\n// 最近记忆（使用 Edge Function 传递的 memories）\nlet recentMemories = '';\nif (userProfile?.recentMemories && userProfile.recentMemories.length > 0) {\n  recentMemories = '\\n\\n**我对你的印象：**\\n' + \n    userProfile.recentMemories.map(m => `- ${m.memory_key}: ${m.memory_value}`).join('\\n');\n}\n\n// 使用 Edge Function 传递的 character 配置\nconst characterName = character?.name || '小鳄鱼助手';\nconst characterPersonality = character?.personality || personality;\n\n// 正常对话模式 Prompt\nconst systemPrompt = `你是${characterName}🐊，孩子的AI成长伙伴。\n\n**性格设定：**\n- ${characterPersonality}\n- 真诚、不做作、不油腻\n- 会开玩笑但有分寸\n- 对世界充满好奇，和孩子一起探索\n\n**对话风格：**\n- 自然对话，不要像客服机器人\n- 可以用emoji，但别每句话都用（🎮🎨🚀⚡💡这些比较适合）\n- 回复长度适中，不要长篇大论\n- 偶尔提一句之前聊过的话题，展现记忆力\n\n**兴趣连接：**\n孩子喜欢：${interests}\n适当在对话中关联这些话题，但不要刻意\n\n**对话历史：**\n${conversationHistory || '（我们刚认识）'}\n${recentMemories}\n\n**禁忌：**\n❌ 不说\"作为AI...\"\"我只是个助手...\"\n❌ 不过度热情（\"太棒了！！！\"\"amazing!!!\"）\n❌ 不居高临下（\"小朋友\"\"你还小\"）\n\n**当前任务：**\n和孩子轻松聊天，做个有趣的朋友。\n\n**重要：你的回复必须是 JSON 格式，包含以下字段：**\n{\n  \"response\": \"你的对话回复\",\n  \"memories\": [\n    {\n      \"memory_key\": \"记忆类型（如 name, age, interest, hobby 等）\",\n      \"memory_value\": \"记忆内容\",\n      \"importance\": 1-10 的重要性评分\n    }\n  ]\n}\n\n**记忆提取规则：**\n- 从用户消息中提取关键信息（姓名、年龄、兴趣、爱好等）\n- 每条记忆要简洁明确\n- 重要性评分：9-10=非常重要（年龄、姓名），7-8=重要（兴趣、爱好），5-6=一般\n- 如果没有值得记录的信息，memories 可以是空数组`;\n\nreturn {\n  json: {\n    systemPrompt,\n    userMessage: message,\n    metadata: {\n      mode: 'normal',\n      intentType: 'chat',\n      age: age\n    }\n  }\n};"
       },
-      "id": "3d96a762-ea6d-4e63-8846-8c5913775974",
+      "id": "0fd7d96a-3a58-483c-a8f8-94f062edf2a7",
       "name": "正常对话模式Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         0,
-        384
+        400
       ]
     },
     {
       "parameters": {
-        "jsCode": "// 获取 AI Agent (chat) 的响应\nconst chatResponse = $input.item.json;\n\n// 提取前面节点的 metadata\nlet metadata = {};\nconst promptNodes = ['苏格拉底模式Prompt', '心理安全模式Prompt', '正常对话模式Prompt', '提取图片生成上下文'];\n\nfor (const nodeName of promptNodes) {\n  try {\n    const node = $(nodeName);\n    if (node && node.item && node.item.json && node.item.json.metadata) {\n      metadata = node.item.json.metadata;\n      break;\n    }\n  } catch (e) {\n    // 节点不存在，继续\n  }\n}\n\n// 提取 AI 回复文本\nlet aiOutput = '';\nlet directResponse = null;\n\n// 检查是否有直接响应（图片生成模式）\ntry {\n  const imageGenNode = $('提取图片生成上下文');\n  if (imageGenNode && imageGenNode.item && imageGenNode.item.json && imageGenNode.item.json.response) {\n    directResponse = imageGenNode.item.json.response;\n  }\n} catch (e) {\n  // 节点不存在或没有直接响应\n}\n\nif (directResponse) {\n  // 使用直接响应（图片生成模式）\n  aiOutput = directResponse;\n} else if (chatResponse.output) {\n  aiOutput = chatResponse.output;\n} else if (chatResponse.text) {\n  aiOutput = chatResponse.text;\n} else if (typeof chatResponse === 'string') {\n  aiOutput = chatResponse;\n} else {\n  aiOutput = JSON.stringify(chatResponse);\n}\n\n// 尝试解析 JSON 格式的回复\nlet parsedResponse;\ntry {\n  // 尝试直接解析\n  parsedResponse = JSON.parse(aiOutput);\n} catch (e) {\n  // 如果解析失败，尝试提取 JSON 部分（可能包含 markdown 代码块）\n  const jsonMatch = aiOutput.match(/```json\\s*([\\s\\S]*?)\\s*```/) || aiOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      parsedResponse = JSON.parse(jsonMatch[1] || jsonMatch[0]);\n    } catch (e2) {\n      // 如果还是失败，按原格式处理\n      parsedResponse = {\n        response: aiOutput,\n        memories: []\n      };\n    }\n  } else {\n    // 没有找到 JSON，按原格式处理\n    parsedResponse = {\n      response: aiOutput,\n      memories: []\n    };\n  }\n}\n\n// 构建返回数据 - 返回 Edge Function 需要的字段\nconst result = {\n  response: parsedResponse.response || aiOutput,\n  intentType: metadata.intentType || 'chat',\n  mode: metadata.mode || 'normal',\n  memories: parsedResponse.memories || []\n};\n\n// 如果有 metadata，添加到结果中\nif (metadata) {\n  result.metadata = metadata;\n}\n\n// 如果有 generationData，添加到结果中\nif (metadata.generationData) {\n  result.generationData = metadata.generationData;\n}\n\nreturn {\n  json: result\n};"
+        "jsCode": "// 获取 AI Agent (chat) 的响应\nconst chatResponse = $input.item.json;\n\n// 提取前面节点的 metadata\nlet metadata = {};\nconst promptNodes = ['苏格拉底模式Prompt', '心理安全模式Prompt', '正常对话模式Prompt', '图片生成模式Prompt'];\n\nfor (const nodeName of promptNodes) {\n  try {\n    const node = $(nodeName);\n    if (node && node.item && node.item.json && node.item.json.metadata) {\n      metadata = node.item.json.metadata;\n      break;\n    }\n  } catch (e) {\n    // 节点不存在，继续\n  }\n}\n\n// 提取 AI 回复文本\nlet aiOutput = '';\nlet directResponse = null;\n\n// 检查是否有直接响应（图片生成模式）\ntry {\n  const imageGenNode = $('图片生成模式Prompt');\n  if (imageGenNode && imageGenNode.item && imageGenNode.item.json && imageGenNode.item.json.response) {\n    directResponse = imageGenNode.item.json.response;\n  }\n} catch (e) {\n  // 节点不存在或没有直接响应\n}\n\nif (directResponse) {\n  // 使用直接响应（图片生成模式）\n  aiOutput = directResponse;\n} else if (chatResponse.output) {\n  aiOutput = chatResponse.output;\n} else if (chatResponse.text) {\n  aiOutput = chatResponse.text;\n} else if (typeof chatResponse === 'string') {\n  aiOutput = chatResponse;\n} else {\n  aiOutput = JSON.stringify(chatResponse);\n}\n\n// 尝试解析 JSON 格式的回复\nlet parsedResponse;\ntry {\n  // 尝试直接解析\n  parsedResponse = JSON.parse(aiOutput);\n} catch (e) {\n  // 如果解析失败，尝试提取 JSON 部分（可能包含 markdown 代码块）\n  const jsonMatch = aiOutput.match(/```json\\s*([\\s\\S]*?)\\s*```/) || aiOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      parsedResponse = JSON.parse(jsonMatch[1] || jsonMatch[0]);\n    } catch (e2) {\n      // 如果还是失败，按原格式处理\n      parsedResponse = {\n        response: aiOutput,\n        memories: []\n      };\n    }\n  } else {\n    // 没有找到 JSON，按原格式处理\n    parsedResponse = {\n      response: aiOutput,\n      memories: []\n    };\n  }\n}\n\n// 构建返回数据 - 返回 Edge Function 需要的字段\nconst result = {\n  response: parsedResponse.response || aiOutput,\n  intentType: metadata.intentType || 'chat',\n  mode: metadata.mode || 'normal',\n  memories: parsedResponse.memories || []\n};\n\n// 如果有 metadata，添加到结果中\nif (metadata) {\n  result.metadata = metadata;\n}\n\n// 如果有 generationData，添加到结果中\nif (metadata.generationData) {\n  result.generationData = metadata.generationData;\n}\n\nreturn {\n  json: result\n};"
       },
-      "id": "580ef5c4-a7f4-422e-be5d-fd78abfa6504",
+      "id": "1df98185-f0e8-456b-a442-a1994d8c6d86",
       "name": "响应格式化",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -76,7 +76,7 @@
         "responseBody": "={{ $json }}",
         "options": {}
       },
-      "id": "f9a2a76b-e747-49f0-9801-fa5303258bd6",
+      "id": "175dff56-8f8f-45d4-b3a1-a42288c1ab22",
       "name": "返回响应",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
@@ -91,8 +91,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
+            "typeValidation": "strict"
           },
           "conditions": [
             {
@@ -110,7 +109,7 @@
         },
         "options": {}
       },
-      "id": "ea41d426-7315-49d2-800f-7fb67e9d33a2",
+      "id": "async-branch-check",
       "name": "检查是否触发图片生成",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -121,27 +120,56 @@
     },
     {
       "parameters": {
-        "jsCode": "// 准备图片生成所需的数据\nconst responseData = $input.item.json;\nconst webhookData = $('Webhook').first().json.body;\n\n// 提取生成数据\nconst generationData = responseData.generationData || {};\n\n// 构建完整的生成请求数据\nconst imageGenRequest = {\n  userId: webhookData.userId || generationData.userId,\n  characterId: webhookData.character.id || generationData.characterId,\n  conversationId: webhookData.conversationId || generationData.conversationId,\n  prompt: generationData.prompt || responseData.metadata?.image_prompt,\n  theme: generationData.theme || responseData.metadata?.image_theme,\n  style: generationData.style || responseData.metadata?.image_style,\n  emotion: generationData.emotion || responseData.metadata?.image_emotion,\n  userDescription: generationData.userDescription || generationData.theme,\n  character: webhookData.character,\n  startTime: Date.now()\n};\n\nreturn {\n  json: imageGenRequest\n};"
+        "jsCode": "// 准备图片生成所需的数据\nconst responseData = $input.item.json;\nconst webhookData = $('Webhook').item.json.body;\n\n// 提取生成数据\nconst generationData = responseData.generationData || {};\n\n// 构建完整的生成请求数据\nconst imageGenRequest = {\n  userId: webhookData.userId || generationData.userId,\n  characterId: webhookData.characterId || generationData.characterId,\n  conversationId: webhookData.conversationId || generationData.conversationId,\n  prompt: generationData.prompt || responseData.metadata?.image_prompt,\n  theme: generationData.theme || responseData.metadata?.image_theme,\n  style: generationData.style || responseData.metadata?.image_style,\n  emotion: generationData.emotion || responseData.metadata?.image_emotion,\n  userDescription: generationData.userDescription || generationData.theme,\n  character: webhookData.character,\n  startTime: Date.now()\n};\n\nreturn {\n  json: imageGenRequest\n};"
       },
-      "id": "a7800f1f-3995-4f37-b31b-ac635ff992d0",
+      "id": "prepare-image-gen",
       "name": "准备图片生成数据",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1008,
+        1000,
         480
       ]
     },
     {
       "parameters": {
-        "jsCode": "// 处理 API 响应\nconst inputData = $('图片生成').first().json;\nconst requestData = $('准备图片生成数据').item.json;\nconst prefixUrl = \"https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/public/\";\n\n// 检查是否有错误\nif (inputData.error) {\n  console.error('[ImageGen] API Error:', inputData.error);\n  \n  return {\n    json: {\n      success: false,\n      error: inputData.error,\n      userId: requestData.userId,\n      conversationId: requestData.conversationId,\n      prompt: requestData.prompt,\n      retryCount: 0\n    }\n  };\n}\n\n// 提取图片 URL\nlet imageUrl = '';\nlet revisedPrompt = '';\n\nif (inputData.data && inputData.data.length > 0) {\n  imageUrl = prefixUrl + $input.first().json.Key;\n  revisedPrompt = inputData.data[0].revised_prompt || requestData.prompt;\n} else if (inputData.url) {\n  imageUrl = prefixUrl + $input.first().json.Key;\n}\n\n// 计算生成时间\nconst generationTime = Math.round((Date.now() - requestData.startTime) / 1000);\n\n// 构建图片记录\nconst imageRecord = {\n  user_id: requestData.userId,\n  character_id: requestData.characterId,\n  conversation_id: requestData.conversationId,\n  image_url: imageUrl,\n  prompt: revisedPrompt,\n  style: requestData.style,\n  emotion: requestData.emotion,\n  user_description: requestData.userDescription,\n  metadata: {\n    model: 'dall-e-3',\n    generation_time: generationTime,\n    api_provider: 'openai',\n    original_prompt: requestData.prompt\n  },\n  is_favorite: false,\n  is_deleted: false\n};\n\nreturn {\n  json: {\n    success: true,\n    imageRecord: imageRecord,\n    imageUrl: imageUrl,\n    generationTime: generationTime\n  }\n};"
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"dall-e-3\",\n  \"prompt\": \"{{ $json.prompt }}\",\n  \"size\": \"1024x1024\",\n  \"quality\": \"standard\",\n  \"n\": 1\n}",
+        "options": {
+          "timeout": 60000
+        }
       },
-      "id": "c047047b-bd7e-4ede-9f61-5609cf017f8d",
+      "id": "call-dalle-api",
+      "name": "调用 DALL-E 3 API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        480
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 处理 API 响应\nconst inputData = $input.item.json;\nconst requestData = $('准备图片生成数据').item.json;\n\n// 检查是否有错误\nif (inputData.error) {\n  console.error('[ImageGen] API Error:', inputData.error);\n  \n  return {\n    json: {\n      success: false,\n      error: inputData.error,\n      userId: requestData.userId,\n      conversationId: requestData.conversationId,\n      prompt: requestData.prompt,\n      retryCount: 0\n    }\n  };\n}\n\n// 提取图片 URL\nlet imageUrl = '';\nlet revisedPrompt = '';\n\nif (inputData.data && inputData.data.length > 0) {\n  imageUrl = inputData.data[0].url;\n  revisedPrompt = inputData.data[0].revised_prompt || requestData.prompt;\n} else if (inputData.url) {\n  imageUrl = inputData.url;\n}\n\n// 计算生成时间\nconst generationTime = Math.round((Date.now() - requestData.startTime) / 1000);\n\n// 构建图片记录\nconst imageRecord = {\n  user_id: requestData.userId,\n  character_id: requestData.characterId,\n  conversation_id: requestData.conversationId,\n  image_url: imageUrl,\n  prompt: revisedPrompt,\n  style: requestData.style,\n  emotion: requestData.emotion,\n  user_description: requestData.userDescription,\n  metadata: {\n    model: 'dall-e-3',\n    generation_time: generationTime,\n    api_provider: 'openai',\n    original_prompt: requestData.prompt\n  },\n  is_favorite: false,\n  is_deleted: false\n};\n\nreturn {\n  json: {\n    success: true,\n    imageRecord: imageRecord,\n    imageUrl: imageUrl,\n    generationTime: generationTime\n  }\n};"
+      },
+      "id": "process-api-response",
       "name": "处理 API 响应",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1408,
+        1400,
         480
       ]
     },
@@ -151,8 +179,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
+            "typeValidation": "strict"
           },
           "conditions": [
             {
@@ -170,7 +197,7 @@
         },
         "options": {}
       },
-      "id": "b1d81240-0fbc-44c5-b13d-db9443d26d8f",
+      "id": "check-api-success",
       "name": "检查 API 是否成功",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -183,13 +210,13 @@
       "parameters": {
         "jsCode": "// 错误处理逻辑\nconst errorData = $input.item.json;\nconst retryCount = errorData.retryCount || 0;\nconst maxRetries = 2;\n\n// 记录错误日志\nconst errorLog = {\n  type: 'image_generation_api_error',\n  userId: errorData.userId,\n  conversationId: errorData.conversationId,\n  error: errorData.error,\n  prompt: errorData.prompt,\n  retryCount: retryCount,\n  timestamp: new Date().toISOString()\n};\n\nconsole.error('[ImageGen] Error Log:', JSON.stringify(errorLog, null, 2));\n\n// 判断是否需要重试\nif (retryCount < maxRetries) {\n  return {\n    json: {\n      shouldRetry: true,\n      retryCount: retryCount + 1,\n      userId: errorData.userId,\n      conversationId: errorData.conversationId,\n      prompt: errorData.prompt,\n      error: errorData.error\n    }\n  };\n} else {\n  // 达到最大重试次数，记录最终失败\n  return {\n    json: {\n      shouldRetry: false,\n      finalError: true,\n      userId: errorData.userId,\n      conversationId: errorData.conversationId,\n      error: errorData.error,\n      errorLog: errorLog\n    }\n  };\n}\n"
       },
-      "id": "35d77822-88a2-4a21-9217-74cbb5c95507",
+      "id": "handle-api-error",
       "name": "处理 API 错误",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1600,
-        688
+        680
       ]
     },
     {
@@ -216,28 +243,28 @@
         },
         "options": {}
       },
-      "id": "856967ad-a3fa-460e-b2e0-764b1162cd2d",
+      "id": "check-retry",
       "name": "检查是否重试",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        1808,
-        688
+        1800,
+        680
       ]
     },
     {
       "parameters": {
-        "amount": 2
+        "amount": 2,
+        "unit": "seconds"
       },
-      "id": "46a54ee7-0133-44cc-b04f-34feeade409b",
+      "id": "wait-before-retry",
       "name": "等待后重试",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
         2000,
-        784
-      ],
-      "webhookId": "551d19df-64cb-4137-a7be-ce89bfc37507"
+        780
+      ]
     },
     {
       "parameters": {
@@ -253,7 +280,7 @@
         -624,
         128
       ],
-      "id": "6590dbb1-6519-4f42-a4f3-57bfaa0487df",
+      "id": "cf22e5bf-dbe5-4f3b-9ccb-ee3cb34ff9d0",
       "name": "AI Agent"
     },
     {
@@ -266,11 +293,11 @@
         -640,
         336
       ],
-      "id": "b872d197-1a97-47f4-852b-91a28592e61b",
+      "id": "b5fbe546-591a-4676-8614-2d5d147c9bf2",
       "name": "DeepSeek Chat Model",
       "credentials": {
         "deepSeekApi": {
-          "id": "wFypnv0nyyAIrKcu",
+          "id": "RkSoo7VxgRWJ5zMs",
           "name": "DeepSeek account"
         }
       }
@@ -285,7 +312,7 @@
         -864,
         192
       ],
-      "id": "6cc86a41-a131-4973-9de6-43e59ee7b67d",
+      "id": "30a074e5-4926-4e6c-9d5b-3152274bb925",
       "name": "When chat message received",
       "webhookId": "eb5099f8-efc6-4b5e-84f2-756d6b7d57dc"
     },
@@ -369,12 +396,13 @@
                 },
                 "conditions": [
                   {
-                    "id": "image-generation-intent",
+                    "id": "38736cef-fa82-4313-b253-2216ed307b97",
                     "leftValue": "={{ $json.output }}",
-                    "rightValue": "image_generation",
+                    "rightValue": "",
                     "operator": {
                       "type": "string",
-                      "operation": "equals"
+                      "operation": "exists",
+                      "singleValue": true
                     }
                   }
                 ],
@@ -391,13 +419,12 @@
                 },
                 "conditions": [
                   {
-                    "id": "38736cef-fa82-4313-b253-2216ed307b97",
+                    "id": "image-generation-intent",
                     "leftValue": "={{ $json.output }}",
-                    "rightValue": "",
+                    "rightValue": "image_generation",
                     "operator": {
                       "type": "string",
-                      "operation": "exists",
-                      "singleValue": true
+                      "operation": "equals"
                     }
                   }
                 ],
@@ -414,7 +441,7 @@
         -272,
         128
       ],
-      "id": "0dc15f7b-94d5-4c2e-bbc4-9ba475770f06",
+      "id": "2ea67554-f62f-4eab-b465-0b16382e8262",
       "name": "Switch"
     },
     {
@@ -427,11 +454,11 @@
         288,
         320
       ],
-      "id": "a7fa3a5a-a29b-423a-81fc-2d49d7544b79",
+      "id": "3098acbd-b1ed-4713-b7a9-54b0d92f717a",
       "name": "DeepSeek Chat Model1",
       "credentials": {
         "deepSeekApi": {
-          "id": "wFypnv0nyyAIrKcu",
+          "id": "RkSoo7VxgRWJ5zMs",
           "name": "DeepSeek account"
         }
       }
@@ -447,7 +474,7 @@
         416,
         384
       ],
-      "id": "3ef5f49c-b902-4d81-b63b-9f7f9191a9b4",
+      "id": "e4cc801e-12e4-4f3c-8efa-d4544f6ddda4",
       "name": "Simple Memory"
     },
     {
@@ -464,39 +491,42 @@
         336,
         144
       ],
-      "id": "66f3cfb4-44a3-47da-a35a-e3d2febc3a44",
+      "id": "6a265ca9-8d77-4213-92d9-8cc0e80bd349",
       "name": "chat"
     },
     {
       "parameters": {
-        "jsCode": "// 子任务 5.2: 实现图片记录构建\n// 从\"处理 API 响应\"节点获取数据\nconst responseData = $input.first().json;\n\n// 检查是否成功\nif (!responseData.success || !responseData.imageRecord) {\n  console.error('[ImageGen] No image record to store');\n  return {\n    json: {\n      error: 'No image record available',\n      skip: true\n    }\n  };\n}\n\n// 获取完整的图片记录\nconst imageRecord = responseData.imageRecord;\n\n// 确保所有必需字段都存在\nconst requiredFields = ['user_id', 'character_id', 'conversation_id', 'image_url', 'prompt', 'style', 'emotion', 'user_description'];\nconst missingFields = requiredFields.filter(field => !imageRecord[field]);\n\nif (missingFields.length > 0) {\n  console.error('[ImageGen] Missing required fields:', missingFields);\n  return {\n    json: {\n      error: `Missing required fields: ${missingFields.join(', ')}`,\n      skip: true\n    }\n  };\n}\n\n// 构建完整的图片记录对象（包含所有必需字段）\nconst completeImageRecord = {\n  user_id: imageRecord.user_id,\n  character_id: imageRecord.character_id,\n  conversation_id: imageRecord.conversation_id || null,\n  image_url: imageRecord.image_url,\n  thumbnail_url: imageRecord.thumbnail_url || null,\n  prompt: imageRecord.prompt,\n  style: imageRecord.style,\n  emotion: imageRecord.emotion,\n  user_description: imageRecord.user_description,\n  metadata: imageRecord.metadata || {\n    model: 'dall-e-3',\n    generation_time: responseData.generationTime || 0,\n    api_provider: 'openai'\n  },\n  is_favorite: false,\n  is_deleted: false\n};\n\nconsole.log('[ImageGen] Image record built successfully:', {\n  user_id: completeImageRecord.user_id,\n  conversation_id: completeImageRecord.conversation_id,\n  image_url: completeImageRecord.image_url.substring(0, 50) + '...'\n});\n\nreturn {\n  json: completeImageRecord\n};"
+        "jsCode": "// 子任务 5.2: 实现图片记录构建\n// 从\"处理 API 响应\"节点获取数据\nconst responseData = $input.item.json;\n\n// 检查是否成功\nif (!responseData.success || !responseData.imageRecord) {\n  console.error('[ImageGen] No image record to store');\n  return {\n    json: {\n      error: 'No image record available',\n      skip: true\n    }\n  };\n}\n\n// 获取完整的图片记录\nconst imageRecord = responseData.imageRecord;\n\n// 确保所有必需字段都存在\nconst requiredFields = ['user_id', 'character_id', 'conversation_id', 'image_url', 'prompt', 'style', 'emotion', 'user_description'];\nconst missingFields = requiredFields.filter(field => !imageRecord[field]);\n\nif (missingFields.length > 0) {\n  console.error('[ImageGen] Missing required fields:', missingFields);\n  return {\n    json: {\n      error: `Missing required fields: ${missingFields.join(', ')}`,\n      skip: true\n    }\n  };\n}\n\n// 构建完整的图片记录对象（包含所有必需字段）\nconst completeImageRecord = {\n  user_id: imageRecord.user_id,\n  character_id: imageRecord.character_id,\n  conversation_id: imageRecord.conversation_id,\n  image_url: imageRecord.image_url,\n  thumbnail_url: imageRecord.thumbnail_url || null,\n  prompt: imageRecord.prompt,\n  style: imageRecord.style,\n  emotion: imageRecord.emotion,\n  user_description: imageRecord.user_description,\n  metadata: imageRecord.metadata || {\n    model: 'dall-e-3',\n    generation_time: responseData.generationTime || 0,\n    api_provider: 'openai'\n  },\n  is_favorite: false,\n  is_deleted: false\n};\n\nconsole.log('[ImageGen] Image record built successfully:', {\n  user_id: completeImageRecord.user_id,\n  conversation_id: completeImageRecord.conversation_id,\n  image_url: completeImageRecord.image_url.substring(0, 50) + '...'\n});\n\nreturn {\n  json: completeImageRecord\n};"
       },
-      "id": "502a38e4-75d0-4562-bcba-bce479a39dd9",
+      "id": "build-image-record",
       "name": "构建图片记录",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1808,
-        384
+        1800,
+        380
       ]
     },
     {
       "parameters": {
+        "operation": "insert",
         "tableId": "user_generated_images",
-        "dataToSend": "autoMapInputData"
+        "options": {
+          "queryName": "insert_generated_image"
+        }
       },
-      "id": "d8e24eeb-bdcd-4868-bb9f-b29cb480ae8d",
+      "id": "insert-to-supabase",
       "name": "插入到 Supabase",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
         2000,
-        384
+        380
       ],
       "credentials": {
         "supabaseApi": {
-          "id": "NsEUYOUtKyv0rnSr",
-          "name": "Supabase account"
+          "id": "supabase-credentials",
+          "name": "Supabase API"
         }
       }
     },
@@ -504,194 +534,40 @@
       "parameters": {
         "jsCode": "// 记录插入成功\nconst insertResult = $input.item.json;\n\nconsole.log('[ImageGen] Image record inserted successfully:', {\n  id: insertResult.id,\n  user_id: insertResult.user_id,\n  conversation_id: insertResult.conversation_id,\n  image_url: insertResult.image_url ? insertResult.image_url.substring(0, 50) + '...' : 'N/A',\n  created_at: insertResult.created_at\n});\n\n// Realtime 通知会自动触发，无需额外操作\nconsole.log('[ImageGen] Realtime notification will be triggered automatically');\n\nreturn {\n  json: {\n    success: true,\n    message: 'Image record stored and notification sent',\n    imageId: insertResult.id,\n    userId: insertResult.user_id,\n    conversationId: insertResult.conversation_id\n  }\n};"
       },
-      "id": "7d42cb8c-25c3-4604-be9f-2ac446ce3f37",
+      "id": "log-insert-success",
       "name": "记录插入成功",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2208,
-        384
+        2200,
+        380
       ]
     },
     {
       "parameters": {
         "jsCode": "// 处理 Supabase 插入错误\nconst errorData = $input.item.json;\n\n// 记录详细错误日志\nconst errorLog = {\n  type: 'image_storage_error',\n  error: errorData.error || errorData,\n  timestamp: new Date().toISOString()\n};\n\nconsole.error('[ImageGen] Supabase Insert Error:', JSON.stringify(errorLog, null, 2));\n\n// 不阻塞流程，只记录错误\nreturn {\n  json: {\n    success: false,\n    error: 'Failed to store image record',\n    errorLog: errorLog\n  }\n};"
       },
-      "id": "54779eaa-645a-4578-b843-08d08f1afd0e",
+      "id": "handle-insert-error",
       "name": "处理插入错误",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         2000,
-        592
+        580
       ]
     },
     {
       "parameters": {
-        "jsCode": "// 获取 Edge Function 传递的完整上下文数据\nconst webhookData = $('Webhook').first().json.body;\nconst { message, userProfile, character, history } = webhookData;\n\n// 从历史对话中提取已收集的信息\nlet context = {\n  theme: null,\n  style: null,\n  emotion: null\n};\n\n// 分析最近的对话历史，提取已收集的信息\nif (history && history.length > 0) {\n  const recentMessages = history.slice(-10);\n  \n  // 从 metadata 中提取已收集的信息\n  for (let i = recentMessages.length - 1; i >= 0; i--) {\n    const msg = recentMessages[i];\n    if (msg.metadata) {\n      if (msg.metadata.image_theme && !context.theme) {\n        context.theme = msg.metadata.image_theme;\n      }\n      if (msg.metadata.image_style && !context.style) {\n        context.style = msg.metadata.image_style;\n      }\n      if (msg.metadata.image_emotion && !context.emotion) {\n        context.emotion = msg.metadata.image_emotion;\n      }\n    }\n  }\n}\n\n// 构建对话历史文本\nlet conversationHistory = '';\nif (history && history.length > 0) {\n  conversationHistory = history.slice(-6).map(m => `${m.role}: ${m.content}`).join('\\n');\n}\n\n// 年龄判断\nconst age = userProfile?.age || 10;\nlet tone = '';\nif (age <= 9) {\n  tone = '用温暖的、像好朋友一样的语气';\n} else if (age <= 12) {\n  tone = '用理解和尊重的语气，像大哥哥大姐姐';\n} else {\n  tone = '用平等对话的语气，不居高临下';\n}\n\n// 使用 Edge Function 传递的 character 配置\nconst characterName = character?.name || '小鳄鱼助手';\n\n// 构建 System Prompt\nconst systemPrompt = `你是${characterName}🐊，正在帮助孩子创作一幅图片。\n\n**你的任务：**\n通过自然对话，收集以下信息来生成图片：\n1. **主题 (Theme)**：孩子想画什么？（如：向日葵、小猫、城堡、宇宙飞船）\n2. **风格 (Style)**：什么画风？（从预设中选择）\n3. **情感 (Emotion)**：希望画面传达什么感觉？（从预设中选择）\n\n**当前收集进度：**\n- 主题：${context.theme || '未收集'}\n- 风格：${context.style || '未收集'}\n- 情感：${context.emotion || '未收集'}\n\n**对话历史：**\n${conversationHistory || '（这是我们的第一次对话）'}\n\n**对话规则：**\n1. 🎨 **自然引导**：不要像填表格一样问问题，要像朋友聊天\n2. 🧠 **智能识别**：如果用户一次性提供多个信息，要能识别并提取\n3. 💡 **提供灵感**：如果用户不知道怎么选，给3-4个具体例子\n4. ✅ **确认环节**：收集完所有信息后，总结并让用户确认\n5. 🚀 **触发生成**：用户确认后，设置 trigger_generation = true\n6. ${tone}\n\n**风格预设（必须从这些选择）：**\n- **storybook**（童话绘本风）：温暖柔和，像故事书里的插画\n- **pixel**（像素游戏风）：复古可爱，像经典游戏\n- **anime**（梦幻动漫风）：色彩流动，像宫崎骏的夏天\n- **scifi**（科幻电影风）：酷炫逼真，像电影海报\n\n**情感预设（必须从这些选择）：**\n- **warm**（温暖快乐）：明亮的色彩，让人开心\n- **mysterious**（神秘梦幻）：深邃的色调，充满想象\n- **playful**（活泼有趣）：鲜艳的颜色，充满活力\n- **calm**（宁静深远）：柔和的色彩，让人放松\n\n**重要：你的回复必须是 JSON 格式：**\n{\n  \"response\": \"你的对话回复（自然、友好、引导性的）\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"已识别的主题（如果有）\",\n    \"image_style\": \"已识别的风格 ID（如果有，必须是 storybook/pixel/anime/scifi 之一）\",\n    \"image_emotion\": \"已识别的情感 ID（如果有，必须是 warm/mysterious/playful/calm 之一）\",\n    \"trigger_generation\": false,\n    \"generationData\": {\n      // 只有 trigger_generation = true 时才包含\n      \"prompt\": \"完整的英文 prompt\",\n      \"theme\": \"主题\",\n      \"style\": \"风格 ID\",\n      \"emotion\": \"情感 ID\"\n    }\n  },\n  \"memories\": []\n}\n\n**示例对话流程：**\n\n**第1轮 - 收集主题：**\n用户：\"我想画一朵花\"\nAI：{\n  \"response\": \"太好了！🌸 你想画什么花呢？比如向日葵、玫瑰、还是樱花？\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"花\",\n    \"trigger_generation\": false\n  },\n  \"memories\": []\n}\n\n**第2轮 - 收集风格：**\n用户：\"向日葵\"\nAI：{\n  \"response\": \"向日葵真棒！☀️ 那你喜欢什么风格呢？\\n\\n童话绘本风 - 温暖柔和，像故事书\\n像素游戏风 - 复古可爱，像经典游戏\\n梦幻动漫风 - 色彩流动，像宫崎骏\\n科幻电影风 - 酷炫逼真，像电影海报\\n\\n你更喜欢哪种？\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"向日葵\",\n    \"trigger_generation\": false\n  },\n  \"memories\": []\n}\n\n**第3轮 - 收集情感：**\n用户：\"童话绘本风\"\nAI：{\n  \"response\": \"好的！最后一个问题，你希望这幅画给人什么感觉呢？\\n\\n温暖快乐 - 明亮的色彩，让人开心\\n神秘梦幻 - 深邃的色调，充满想象\\n活泼有趣 - 鲜艳的颜色，充满活力\\n宁静深远 - 柔和的色彩，让人放松\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"向日葵\",\n    \"image_style\": \"storybook\",\n    \"trigger_generation\": false\n  },\n  \"memories\": []\n}\n\n**第4轮 - 确认：**\n用户：\"温暖快乐\"\nAI：{\n  \"response\": \"完美！让我确认一下：\\n\\n🎨 主题：向日葵\\n🖌️ 风格：童话绘本风\\n💛 情感：温暖快乐\\n\\n这样可以吗？如果没问题，我就开始画啦！\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"向日葵\",\n    \"image_style\": \"storybook\",\n    \"image_emotion\": \"warm\",\n    \"trigger_generation\": false\n  },\n  \"memories\": []\n}\n\n**第5轮 - 触发生成：**\n用户：\"可以\"\nAI：{\n  \"response\": \"太好了！🎨 我开始为你创作了！这可能需要一点时间，你可以继续和我聊天，图片生成好后我会立刻通知你！\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"向日葵\",\n    \"image_style\": \"storybook\",\n    \"image_emotion\": \"warm\",\n    \"trigger_generation\": true,\n    \"generationData\": {\n      \"prompt\": \"sunflower, children's book illustration, watercolor, soft colors, whimsical, warm lighting, cozy atmosphere, bright and cheerful, happy mood, high quality, detailed, professional, safe for children\",\n      \"theme\": \"向日葵\",\n      \"style\": \"storybook\",\n      \"emotion\": \"warm\"\n    }\n  },\n  \"memories\": []\n}\n\n**智能识别示例（用户一次性提供多个信息）：**\n用户：\"我想画一朵温暖的童话风格向日葵\"\nAI：{\n  \"response\": \"太棒了！我理解了：\\n\\n🎨 主题：向日葵\\n🖌️ 风格：童话绘本风\\n💛 情感：温暖快乐\\n\\n这样可以吗？如果没问题，我就开始画啦！\",\n  \"metadata\": {\n    \"mode\": \"creative\",\n    \"intentType\": \"image_generation\",\n    \"image_theme\": \"向日葵\",\n    \"image_style\": \"storybook\",\n    \"image_emotion\": \"warm\",\n    \"trigger_generation\": false\n  },\n  \"memories\": []\n}\n\n**当前用户消息：**\n${message}\n\n请根据当前收集进度，生成合适的回复。记住：\n1. 如果信息不完整，继续收集\n2. 如果信息完整但未确认，展示汇总并请求确认\n3. 如果用户确认，设置 trigger_generation = true 并构建 generationData\n4. 风格和情感必须使用预设的 ID（storybook/pixel/anime/scifi 和 warm/mysterious/playful/calm）\n5. 回复要自然、友好、有引导性`;\n\nreturn {\n  json: {\n    systemPrompt,\n    userMessage: message,\n    metadata: {\n      mode: 'creative',\n      intentType: 'image_generation',\n      context: context\n    }\n  }\n};"
+        "jsCode": "// 获取 Edge Function 传递的完整上下文数据\nconst webhookData = $('Webhook').item.json.body;\nconst intentData = $('AI Agent').item.json.output;\n\nconst { message, userProfile, character, history } = webhookData;\n\n// 风格预设\nconst STYLE_PRESETS = [\n  {\n    id: 'storybook',\n    name: '童话绘本风',\n    description: '温暖柔和，像故事书里的插画',\n    prompt_suffix: \"children's book illustration, watercolor, soft colors, whimsical\"\n  },\n  {\n    id: 'pixel',\n    name: '像素游戏风',\n    description: '复古可爱，像经典游戏',\n    prompt_suffix: '8-bit pixel art, retro game style, vibrant colors'\n  },\n  {\n    id: 'anime',\n    name: '梦幻动漫风',\n    description: '色彩流动，像宫崎骏的夏天',\n    prompt_suffix: 'anime style, Studio Ghibli inspired, dreamy atmosphere, soft lighting'\n  },\n  {\n    id: 'scifi',\n    name: '科幻电影风',\n    description: '酷炫逼真，像电影海报',\n    prompt_suffix: 'sci-fi concept art, cinematic, detailed, futuristic, dramatic lighting'\n  }\n];\n\n// 情感预设\nconst EMOTION_PRESETS = [\n  {\n    id: 'warm',\n    name: '温暖快乐',\n    description: '明亮的色彩，让人开心',\n    prompt_suffix: 'warm lighting, cozy atmosphere, bright and cheerful, happy mood'\n  },\n  {\n    id: 'mysterious',\n    name: '神秘梦幻',\n    description: '深邃的色调，充满想象',\n    prompt_suffix: 'mysterious mood, deep colors, ethereal lighting, magical atmosphere'\n  },\n  {\n    id: 'playful',\n    name: '活泼有趣',\n    description: '鲜艳的颜色，充满活力',\n    prompt_suffix: 'playful and fun, vibrant colors, dynamic composition, energetic'\n  },\n  {\n    id: 'calm',\n    name: '宁静深远',\n    description: '柔和的色彩，让人放松',\n    prompt_suffix: 'peaceful and serene, soft colors, gentle lighting, tranquil mood'\n  }\n];\n\n// 从对话历史中提取创作上下文\nfunction extractCreationContext(history) {\n  const context = {\n    theme: null,\n    style: null,\n    emotion: null,\n    details: []\n  };\n  \n  if (!history || history.length === 0) {\n    return context;\n  }\n  \n  // 从最近的消息中提取（倒序查找）\n  for (let i = history.length - 1; i >= Math.max(0, history.length - 10); i--) {\n    const msg = history[i];\n    if (msg.metadata) {\n      if (msg.metadata.image_theme && !context.theme) {\n        context.theme = msg.metadata.image_theme;\n      }\n      if (msg.metadata.image_style && !context.style) {\n        context.style = msg.metadata.image_style;\n      }\n      if (msg.metadata.image_emotion && !context.emotion) {\n        context.emotion = msg.metadata.image_emotion;\n      }\n      if (msg.metadata.image_details) {\n        context.details.push(...msg.metadata.image_details);\n      }\n    }\n  }\n  \n  return context;\n}\n\n// 检查是否为确认消息\nfunction isConfirmation(message) {\n  const confirmKeywords = ['确认', '确定', '好的', '开始生成', '生成', '可以', 'ok', 'yes'];\n  const lowerMsg = message.toLowerCase().trim();\n  return confirmKeywords.some(keyword => lowerMsg.includes(keyword));\n}\n\n// 构建图片生成 Prompt\nfunction buildImagePrompt(context, character) {\n  const { theme, style, emotion } = context;\n  \n  const stylePreset = STYLE_PRESETS.find(s => s.id === style);\n  const emotionPreset = EMOTION_PRESETS.find(e => e.id === emotion);\n  \n  const stylePrompt = stylePreset ? stylePreset.prompt_suffix : '';\n  const emotionPrompt = emotionPreset ? emotionPreset.prompt_suffix : '';\n  \n  const characterStyle = character?.personality || '';\n  \n  const prompt = `${theme}, ${stylePrompt}, ${emotionPrompt}, inspired by ${characterStyle}, high quality, detailed, professional, safe for children, appropriate for all ages`;\n  \n  return prompt;\n}\n\n// 主逻辑\nconst context = extractCreationContext(history);\nconst characterName = character?.name || '小鳄鱼助手';\n\nlet response = '';\nlet metadata = {\n  mode: 'creative',\n  intentType: 'image_generation',\n  trigger_generation: false\n};\n\n// 检查信息收集进度\nif (!context.theme) {\n  // 收集主题\n  response = `太好了！首先告诉我，你想画什么？🎨`;\n} else if (!context.style) {\n  // 收集风格\n  response = `很棒的主题！现在选择画风吧！你喜欢哪种风格？\\n\\n`;\n  STYLE_PRESETS.forEach(style => {\n    response += `${style.name} - ${style.description}\\n`;\n  });\n  metadata.image_theme = context.theme;\n} else if (!context.emotion) {\n  // 收集情感\n  response = `好的！最后选择情感色彩吧！你希望画面给人什么感觉？\\n\\n`;\n  EMOTION_PRESETS.forEach(emotion => {\n    response += `${emotion.name} - ${emotion.description}\\n`;\n  });\n  metadata.image_theme = context.theme;\n  metadata.image_style = context.style;\n} else {\n  // 信息收集完整，等待确认\n  const userConfirmed = isConfirmation(message);\n  \n  if (userConfirmed) {\n    // 用户确认，构建 prompt 并触发生成\n    const imagePrompt = buildImagePrompt(context, character);\n    \n    response = `太好了！🎨 我开始为你创作了！\\n\\n这可能需要一点时间，你可以继续和我聊天，图片生成好后我会立刻通知你！`;\n    \n    metadata.image_theme = context.theme;\n    metadata.image_style = context.style;\n    metadata.image_emotion = context.emotion;\n    metadata.image_prompt = imagePrompt;\n    metadata.confirmed = true;\n    metadata.trigger_generation = true; // 关键：触发异步生成\n    \n    // 传递生成数据\n    metadata.generationData = {\n      userId: webhookData.userId,\n      characterId: webhookData.characterId,\n      conversationId: webhookData.conversationId,\n      prompt: imagePrompt,\n      theme: context.theme,\n      style: context.style,\n      emotion: context.emotion,\n      userDescription: context.theme\n    };\n  } else {\n    // 展示汇总，请求确认\n    const stylePreset = STYLE_PRESETS.find(s => s.id === context.style);\n    const emotionPreset = EMOTION_PRESETS.find(e => e.id === context.emotion);\n    \n    response = `太棒了！让我确认一下：\\n\\n`;\n    response += `📝 主题：${context.theme}\\n`;\n    response += `🎨 风格：${stylePreset ? stylePreset.name : context.style}\\n`;\n    response += `💫 情感：${emotionPreset ? emotionPreset.name : context.emotion}\\n\\n`;\n    response += `确认开始创作吗？（回复\"确认\"或\"开始生成\"）\\n`;\n    response += `如果想修改，直接告诉我哪里要改！`;\n    \n    metadata.image_theme = context.theme;\n    metadata.image_style = context.style;\n    metadata.image_emotion = context.emotion;\n  }\n}\n\nreturn {\n  json: {\n    systemPrompt: '', // 不需要 system prompt，直接返回响应\n    userMessage: message,\n    metadata: metadata,\n    response: response\n  }\n};"
       },
-      "id": "1209302b-c0f3-4634-a22f-04475cca3525",
-      "name": "图片生成智能引导",
+      "id": "image-gen-prompt",
+      "name": "图片生成模式Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         0,
-        560
+        600
       ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// 获取 AI 响应\nconst aiResponse = $input.first().json;\n\n// 解析 JSON\nlet parsedResponse;\ntry {\n  // 尝试直接解析\n  const output = aiResponse.output || aiResponse.text || JSON.stringify(aiResponse);\n  parsedResponse = JSON.parse(output);\n} catch (e) {\n  // 如果解析失败，尝试提取 JSON 部分\n  const output = aiResponse.output || aiResponse.text || JSON.stringify(aiResponse);\n  const jsonMatch = output.match(/```json\\s*([\\s\\S]*?)\\s*```/) || \n                    output.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      parsedResponse = JSON.parse(jsonMatch[1] || jsonMatch[0]);\n    } catch (e2) {\n      console.error('[提取上下文] JSON 解析失败:', e2);\n      // 默认响应\n      parsedResponse = {\n        response: output,\n        metadata: {\n          mode: 'creative',\n          intentType: 'image_generation',\n          trigger_generation: false\n        },\n        memories: []\n      };\n    }\n  } else {\n    console.error('[提取上下文] 未找到 JSON:', output);\n    // 默认响应\n    parsedResponse = {\n      response: output,\n      metadata: {\n        mode: 'creative',\n        intentType: 'image_generation',\n        trigger_generation: false\n      },\n      memories: []\n    };\n  }\n}\n\n// 确保 metadata 存在\nif (!parsedResponse.metadata) {\n  parsedResponse.metadata = {\n    mode: 'creative',\n    intentType: 'image_generation',\n    trigger_generation: false\n  };\n}\n\n// 如果有 generationData，添加必要的字段\nif (parsedResponse.metadata.trigger_generation && parsedResponse.metadata.generationData) {\n  const webhookData = $('Webhook').first().json.body;\n  parsedResponse.metadata.generationData.userId = webhookData.userId;\n  parsedResponse.metadata.generationData.characterId = webhookData.characterId;\n  parsedResponse.metadata.generationData.conversationId = webhookData.conversationId;\n  parsedResponse.metadata.generationData.userDescription = parsedResponse.metadata.generationData.theme;\n}\n\nconsole.log('[提取上下文] 解析结果:', JSON.stringify(parsedResponse, null, 2));\n\nreturn {\n  json: parsedResponse\n};"
-      },
-      "id": "78343396-b0a4-4a3c-9098-1b09bd6e5f7f",
-      "name": "提取图片生成上下文",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        512,
-        544
-      ]
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
-      "typeVersion": 1,
-      "position": [
-        80,
-        816
-      ],
-      "id": "7d5eabe6-d585-4968-9d36-8acbcf954248",
-      "name": "DeepSeek Chat Model2",
-      "credentials": {
-        "deepSeekApi": {
-          "id": "wFypnv0nyyAIrKcu",
-          "name": "DeepSeek account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Webhook').item.json.body.userId }}"
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        224,
-        816
-      ],
-      "id": "abf9cc22-14a3-406e-b868-68e1b39729e6",
-      "name": "Simple Memory1"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.siliconflow.cn/v1/images/generations",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"Kwai-Kolors/Kolors\",\n  \"prompt\": {{ JSON.stringify($json.prompt) }},\n  \"negative_prompt\": \"<string>\",\n  \"image_size\": \"1024x1024\",\n  \"batch_size\": 1,\n  \"seed\": 4999999999,\n  \"num_inference_steps\": 20,\n  \"guidance_scale\": 7.5,\n  \"cfg\": 10.05,\n  \"image\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\",\n  \"image2\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\",\n  \"image3\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\"\n} ",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1200,
-        480
-      ],
-      "id": "f67d61f1-724d-45f1-bd07-6a9c974e563e",
-      "name": "图片生成",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "2FwtdlN6IUPigrBl",
-          "name": "火山方舟API"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $('Webhook').item.json.body.message }}",
-        "options": {
-          "systemMessage": "={{ $json.systemPrompt }}"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        176,
-        560
-      ],
-      "id": "5b923d7e-e5d7-4ed9-9ab8-42105f5a7475",
-      "name": "chat1"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/audios_test/produce/{{ $('准备图片生成数据').first().json.userId }}/{{$now.toMillis()}}.png",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Accept",
-              "value": "image/png,image/*"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "binaryData",
-        "inputDataFieldName": "dataImage",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1520,
-        208
-      ],
-      "id": "dccf55b4-eeaa-4449-83f8-891a9ec6b637",
-      "name": "公共存储桶存储封面",
-      "credentials": {
-        "supabaseApi": {
-          "id": "NsEUYOUtKyv0rnSr",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.images[0].url }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file",
-              "outputPropertyName": "dataImage"
-            }
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1344,
-        208
-      ],
-      "id": "a14e1f7a-2ad4-40c4-a20a-b34772040a37",
-      "name": "获取图片"
     }
   ],
   "pinData": {},
@@ -771,7 +647,18 @@
       "main": [
         [
           {
-            "node": "图片生成",
+            "node": "调用 DALL-E 3 API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "调用 DALL-E 3 API": {
+      "main": [
+        [
+          {
+            "node": "处理 API 响应",
             "type": "main",
             "index": 0
           }
@@ -862,6 +749,17 @@
         ]
       ]
     },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Switch": {
       "main": [
         [
@@ -887,14 +785,14 @@
         ],
         [
           {
-            "node": "图片生成智能引导",
+            "node": "正常对话模式Prompt",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "正常对话模式Prompt",
+            "node": "图片生成模式Prompt",
             "type": "main",
             "index": 0
           }
@@ -956,88 +854,11 @@
         ]
       ]
     },
-    "图片生成智能引导": {
+    "图片生成模式Prompt": {
       "main": [
         [
           {
-            "node": "chat1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "提取图片生成上下文": {
-      "main": [
-        [
-          {
-            "node": "响应格式化",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DeepSeek Chat Model2": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "chat1",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Simple Memory1": {
-      "ai_memory": [
-        [
-          {
-            "node": "chat1",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "图片生成": {
-      "main": [
-        [
-          {
-            "node": "获取图片",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "chat1": {
-      "main": [
-        [
-          {
-            "node": "提取图片生成上下文",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "获取图片": {
-      "main": [
-        [
-          {
-            "node": "公共存储桶存储封面",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "公共存储桶存储封面": {
-      "main": [
-        [
-          {
-            "node": "处理 API 响应",
+            "node": "chat",
             "type": "main",
             "index": 0
           }
@@ -1045,16 +866,16 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "dfee2618-dbef-4cf1-8fc9-d4fbe919caf6",
+  "versionId": "fc8e96fd-2f96-41e5-8f6d-05dd1fea0690",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "95a0766dd187aed35803c4600a81d3fbcaee825814f26dbca07097164bb8f68e"
+    "instanceId": "43c446d6811b6c0223ac6112884b5e3639a2eed34a6802beff05d99aa570c92a"
   },
-  "id": "g3vJnSJBNyk4t5dHBufRa",
+  "id": "I4PPX9jfnIfHbA6f",
   "tags": []
 }

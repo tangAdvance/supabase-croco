@@ -98,13 +98,29 @@ serve(async (req: Request) => {
     };
 
     // ========================================================================
-    // Step 4: Call N8N Workflow (Requirements 2.1, 2.6, 8.2)
+    // Step 4: Save user message (before calling N8N)
+    // ========================================================================
+    
+    // Save user message first to get the message ID
+    const userMessageId = await saveMessage({
+      conversation_id: conversationId,
+      user_id: requestData.userId,
+      character_id: requestData.characterId,
+      role: 'user',
+      content: requestData.message,
+    });
+
+    console.log(`[Main] User message saved: ${userMessageId}`);
+
+    // ========================================================================
+    // Step 5: Call N8N Workflow (Requirements 2.1, 2.6, 8.2)
     // ========================================================================
     
     const n8nRequest: N8NRequest = {
       message: requestData.message,
       userId: requestData.userId,
       conversationId: conversationId,
+      userMessageId: userMessageId,  // Pass user message ID to N8N
       userProfile,
       character,
       history,
@@ -113,18 +129,13 @@ serve(async (req: Request) => {
     const n8nResponse = await callN8NWorkflow(n8nRequest);
 
     // ========================================================================
-    // Step 5: Async post-processing (Requirements 3.1, 3.2, 3.4, 4.5, 8.3, 8.4)
+    // Step 6: Async post-processing (Requirements 4.5, 8.3, 8.4)
     // ========================================================================
     
-    // Store user message and AI response asynchronously
-    // These operations should not block the response to the client
-    const messageId = await saveUserAndAIMessages(
-      conversationId,
-      requestData.userId,
-      requestData.characterId,
-      requestData.message,
-      n8nResponse
-    );
+    // N8N has already saved the AI message, we just get the ID from response
+    const aiMessageId = n8nResponse.aiMessageId;
+
+    console.log(`[Main] AI message ID from N8N: ${aiMessageId}`);
 
     // Extract and save memories asynchronously (don't await)
     extractAndSaveMemories(
@@ -143,7 +154,7 @@ serve(async (req: Request) => {
     });
 
     // ========================================================================
-    // Step 6: Build and return response (Requirement 5.4)
+    // Step 7: Build and return response (Requirement 5.4)
     // ========================================================================
     
     const response: ChatResponse = {
@@ -152,7 +163,8 @@ serve(async (req: Request) => {
       mode: n8nResponse.mode,
       timestamp: new Date().toISOString(),
       conversationId: conversationId,
-      messageId: messageId,
+      messageId: aiMessageId,
+      userMessageId: userMessageId,
     };
 
     return createSuccessResponse(response);
@@ -202,12 +214,13 @@ async function callN8NWorkflow(request: N8NRequest): Promise<N8NResponse> {
     const data = await response.json();
 
     // Validate N8N response format
-    if (!data.response || !data.intentType || !data.mode) {
+    if (!data.response || !data.intentType || !data.mode || !data.aiMessageId) {
       console.warn('[N8N] Response missing required fields, using defaults');
       return {
         response: data.response || '抱歉，我现在无法回答',
         intentType: data.intentType || 'unknown',
         mode: data.mode || 'normal',
+        aiMessageId: data.aiMessageId || '',
       };
     }
 
@@ -221,45 +234,6 @@ async function callN8NWorkflow(request: N8NRequest): Promise<N8NResponse> {
     
     throw new Error(`N8N workflow call failed: ${error.message}`);
   }
-}
-
-/**
- * Save user message and AI response to database
- * @param conversationId - Conversation ID
- * @param userId - User ID
- * @param characterId - Character ID
- * @param userMessage - User's message
- * @param n8nResponse - N8N response with AI reply
- * @returns Message ID of the AI response
- */
-async function saveUserAndAIMessages(
-  conversationId: string,
-  userId: string,
-  characterId: string,
-  userMessage: string,
-  n8nResponse: N8NResponse
-): Promise<string> {
-  // Save user message
-  await saveMessage({
-    conversation_id: conversationId,
-    user_id: userId,
-    character_id: characterId,
-    role: 'user',
-    content: userMessage,
-  });
-
-  // Save AI response
-  const messageId = await saveMessage({
-    conversation_id: conversationId,
-    user_id: userId,
-    character_id: characterId,
-    role: 'assistant',
-    content: n8nResponse.response,
-    intent_type: n8nResponse.intentType,
-    mode: n8nResponse.mode,
-  });
-
-  return messageId;
 }
 
 /**
