@@ -68,10 +68,13 @@
 ### 2. 文档（按功能分类）
 
 #### 聊天系统文档
-- `.kiro/specs/chat-backend-architecture/` - 架构规范（需求和设计）
-- `supabase/functions/chat-handler/DEPLOYMENT.md` - 部署文档
-- `supabase/functions/chat-handler/QUICK_DEPLOY.md` - 快速部署
-- `README_MEMORY_SYSTEM.md` - 记忆系统说明
+- `chat-system/README.md` - **入口文档**（导航）
+- `chat-system/API_DOCUMENTATION.md` - API 接口文档
+- `chat-system/requirements.md` - 需求文档
+- `chat-system/design.md` - 设计文档
+- `chat-system/tasks.md` - 任务列表
+- `chat-system/chat-workflow.json` - N8N 工作流
+- `supabase/functions/chat-handler/` - Edge Function 代码
 
 #### 播客系统文档
 - `podcast-system/README.md` - **入口文档**（导航）
@@ -259,10 +262,10 @@ feature-name/
 ### 参考现有功能时
 
 **聊天系统**：
-- Spec: `.kiro/specs/chat-backend-architecture/`
+- Spec: `chat-system/`
 - 代码: `supabase/functions/chat-handler/`
-- 工作流: `n8n.json`
-- 文档: `README_MEMORY_SYSTEM.md`
+- 工作流: `chat-system/chat-workflow.json`
+- 文档: `chat-system/README.md`
 
 **播客系统**：
 - 文档: `podcast-system/`（完整示例）

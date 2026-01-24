@@ -1,0 +1,1004 @@
+{
+  "name": "播客推送系统 MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1904,
+        192
+      ],
+      "id": "a9a6b566-9d7b-4433-9318-1aa3e5a9ab29",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "characters",
+        "limit": 1,
+        "filterType": "none"
+      },
+      "id": "f310fa4d-3f7b-4198-8411-639219e39018",
+      "name": "查询活跃角色1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        192
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "users",
+        "limit": 1
+      },
+      "id": "e9e17694-221c-4f2d-a117-c1ea843ef390",
+      "name": "查询所有用户1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        64
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1456,
+        192
+      ],
+      "id": "86822a32-f6aa-452a-940c-876c2c055afd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "id": "ead133e5-4331-401e-9aec-33798640e413",
+      "name": "循环角色结束1",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "character_user_memories",
+        "limit": 5,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            },
+            {
+              "keyName": "character_id",
+              "condition": "eq",
+              "keyValue": "={{ $('查询活跃角色1').item.json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "e015241a-5e41-4dbd-8fce-6d10a86ba6dd",
+      "name": "查询用户记忆1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        64
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取角色和用户信息\nconst character = $('Loop Over Items').first().json.id;\nconst user = $('查询所有用户1').first().json;\nconst memories = $input.all();\n\n// 判断用户年龄阶段\nfunction getAgeStage(age) {\n  if (age >= 6 && age <= 9) {\n    return {\n      stage: 'beginner',\n      name: '启蒙期',\n      style: '简单易懂，使用童话故事、动物比喻和生动的画面感。多用短句，避免复杂概念。'\n    };\n  } else if (age >= 10 && age <= 12) {\n    return {\n      stage: 'explorer',\n      name: '探索期',\n      style: '逻辑推理，使用生活案例和实验思维。引导思考，适当使用科学术语并解释。'\n    };\n  } else if (age >= 13 && age <= 15) {\n    return {\n      stage: 'advanced',\n      name: '深化期',\n      style: '跨学科关联，抽象思维和深度类比。使用专业术语，引导批判性思考。'\n    };\n  } else {\n    return {\n      stage: 'explorer',\n      name: '探索期',\n      style: '逻辑推理，使用生活案例和实验思维。引导思考，适当使用科学术语并解释。'\n    };\n  }\n}\n\n// 获取年龄阶段\nconst ageStage = getAgeStage(user.age || 10);\n\n// 格式化用户记忆\nlet memoriesText = '';\nif (memories.length > 0) {\n  memoriesText = memories.map(m => `- ${m.json.memory_key}: ${m.json.memory_value}`).join('\\n');\n} else {\n  memoriesText = '（暂无记忆）';\n}\n\n// 构建 Tavily 搜索查询\nconst expertise = character.expertise && character.expertise.length > 0 \n  ? character.expertise[0] \n  : '科学知识';\n\nconst interests = user.interests && user.interests.length > 0\n  ? user.interests.join('、')\n  : '学习';\n\nconst searchQuery = `${expertise} ${interests} 儿童教育 最新内容`;\n\nreturn {\n  json: {\n    character: character,\n    user: user,\n    ageStage: ageStage,\n    memoriesText: memoriesText,\n    searchQuery: searchQuery,\n    expertise: expertise,\n    interests: interests\n  }\n};"
+      },
+      "id": "c7eae7bf-5d7b-4a7a-9765-022c669a0c87",
+      "name": "准备上下文1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取上下文和搜索结果\nconst context = $('准备上下文1').first().json;\nconst searchResults = $input.first().json;\n\n// 提取搜索结果内容\nlet searchContent = '';\nif (searchResults.results && searchResults.results.length > 0) {\n  searchContent = searchResults.results.map(r => {\n    return `标题：${r.title}\\n内容：${r.content}\\n来源：${r.url}`;\n  }).join('\\n\\n');\n} else {\n  searchContent = '暂无搜索结果，请根据角色专长自由创作。';\n}\n\n// 构建 AI Prompt\nconst prompt = `你是 ${context.character.name}，一个专注于 ${context.expertise} 的 AI 助手。\n\n**用户信息：**\n- 姓名：${context.user.name || '小朋友'}\n- 年龄：${context.user.age || 10} 岁\n- 年龄阶段：${context.ageStage.name}\n- 兴趣：${context.interests}\n- 年级：${context.user.grade || '未知'}\n\n**我对用户的了解：**\n${context.memoriesText}\n\n**今日主题内容：**\n${searchContent}\n\n**任务：**\n请根据以上信息，为这位用户创作一篇个性化的播客文章。\n\n**文字风格要求（${context.ageStage.name}）：**\n${context.ageStage.style}\n\n**内容要求：**\n1. 结合用户的兴趣和记忆，让内容更个性化\n2. 使用 ${context.character.name} 的语气和风格：${context.character.personality || '亲切友好'}\n3. 文章长度：500-800 字\n4. 适合转换为 3-5 分钟的音频\n5. 开头要吸引人，结尾要有启发\n6. 适当提及用户的名字，增加亲切感\n7. 内容要积极向上，富有教育意义\n\n**输出格式：**\n只输出播客文章内容，不要包含任何其他说明、标记或格式。直接输出可以朗读的文字。带“（）”的语气词也不要`;\n\nreturn {\n  json: {\n    prompt: prompt,\n    context: context,\n    searchResults: searchResults\n  }\n};"
+      },
+      "id": "0367ab54-2189-4170-a749-7abc612dc401",
+      "name": "构建 AI Prompt1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "options": {}
+      },
+      "id": "4b4776ff-9cea-4072-82fe-3c7fd89f5ac6",
+      "name": "AI 生成文章1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -112,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "85ad3494-1f41-4ec5-a4e3-1d158b78e067",
+      "name": "DeepSeek Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        240
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "pTKXhzqQRGV1EDLq",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取所有需要的数据\nconst context = $('准备上下文1').first().json;\nconst article = $('AI 生成文章1').first().json.output;\nconst audioUpload = $input.first().json;\nconst character = $('Loop Over Items').first().json;\n\n// 生成标题\nconst title = `${character.name}的${context.expertise}小课堂 - ${$now.toFormat('yyyy年MM月dd日')}`;\n\n// 生成摘要（取文章前100字）\nconst summary = article.substring(0, 100) + '...';\n\n// 生成标签\nconst tags = [\n  context.expertise,\n  context.ageStage.name,\n  ...context.user.interests || []\n];\n// 目标年级\nconst targetGrades = [context.user.grade || '全年级'];\n\nconst fiexurl = \"https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/public/\"; \n// 音频 URL\nconst audioUrl = fiexurl + audioUpload.Key;\n// 封面图片地址\nconst cover_image_url = fiexurl + $('公共存储桶存储封面').first().json.Key;\n\n\n// 估算音频时长（按每分钟150字计算）\nconst durationSeconds = Math.ceil((article.length / 150) * 60);\n\nreturn {\n  json: {\n    title: title,\n    content: article,\n    audio_url: audioUrl,\n    cover_image_url: cover_image_url,\n    summary: summary,\n    tags: tags,\n    target_grades: targetGrades,\n    duration_seconds: durationSeconds,\n    is_published: true,\n    publish_date: $now.toFormat('yyyy-MM-dd'),\n    // 保存上下文用于后续插入 user_podcast_feeds\n    user_id: context.user.id,\n    character_id: character.id\n  }\n};"
+      },
+      "id": "6a04ea5b-2b9f-454a-a1f7-08a4a702bb41",
+      "name": "准备播客数据1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "podcasts",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "title",
+              "fieldValue": "={{ $json.title }}"
+            },
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.content }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "={{ $json.summary }}"
+            },
+            {
+              "fieldId": "tags",
+              "fieldValue": "={{ $json.tags }}"
+            },
+            {
+              "fieldId": "target_grades",
+              "fieldValue": "={{ $json.target_grades }}"
+            },
+            {
+              "fieldId": "publish_date",
+              "fieldValue": "={{ $json.publish_date }}"
+            },
+            {
+              "fieldId": "is_published",
+              "fieldValue": "={{ $json.is_published }}"
+            },
+            {
+              "fieldId": "audio_url",
+              "fieldValue": "={{ $json.audio_url }}"
+            },
+            {
+              "fieldId": "cover_image_url",
+              "fieldValue": "={{ $json.cover_image_url }}"
+            }
+          ]
+        }
+      },
+      "id": "50d4e4b8-6f7c-48ad-87dc-1c0d53115334",
+      "name": "保存播客1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        160
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "user_podcast_feeds",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('准备播客数据1').item.json.user_id }}"
+            },
+            {
+              "fieldId": "podcast_id",
+              "fieldValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "d9c3feec-256e-4622-b024-cfabf102ec0e",
+      "name": "保存推送记录1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        160
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 获取返回的文本数据\nlet rawData = $input.first().json.data;\n\n// 按换行符分割多个JSON对象\nconst jsonLines = rawData.split('\\n').filter(line => line.trim() !== '');\n\nconsole.log('找到', jsonLines.length, '个JSON对象');\n\n// 存储所有音频片段\nlet audioSegments = [];\n\n// 解析每个JSON对象\nfor (const line of jsonLines) {\n  try {\n    const jsonObj = JSON.parse(line);\n    \n    // 检查是否成功\n    if (jsonObj.code === 0 && jsonObj.data) {\n      audioSegments.push(jsonObj.data);\n      console.log('成功解析片段，长度:', jsonObj.data.length);\n    }\n  } catch (error) {\n    console.log('解析JSON失败:', error, '内容:', line.substring(0, 50));\n  }\n}\n\nconsole.log('总共获取到', audioSegments.length, '个音频片段');\n\n// 合并所有base64音频数据\nconst combinedAudioBase64 = audioSegments.join('');\n\nconsole.log('合并后的base64总长度:', combinedAudioBase64.length);\n\n// 生成文件名\nconst fileName = `tts_${Date.now()}.mp3`;\n\n// 返回二进制格式\nreturn {\n  json: {\n    fileName: fileName,\n    segmentCount: audioSegments.length,\n    totalSize: combinedAudioBase64.length\n  },\n  binary: {\n    data: {\n      data: combinedAudioBase64,\n      mimeType: 'audio/mpeg',\n      fileName: fileName,\n      fileExtension: 'mp3'\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "da2e7aa8-a128-4ee4-aba4-63e390c9238a",
+      "name": "Base64转音频"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openspeech.bytedance.com/api/v3/tts/unidirectional",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"X-Api-App-Id\": \"6304834761\",\n  \"X-Api-Access-Key\": \"MXh6eiAALsdu-K4D1v0UMr_a99KUR_9V\",\n  \"X-Api-Resource-Id\": \"seed-tts-1.0\",\n  \"Content-Type\": \"application/json\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"user\": {\n        \"uid\": \"{{ $('构建 AI Prompt1').item.json.context.user.id }}\"\n    },\n    \"req_params\": {\n        \"text\": {{ JSON.stringify($json.output) }},\n        \"speaker\": \"zh_female_shuangkuaisisi_moon_bigtts\",\n        \"audio_params\": {\n            \"format\": \"mp3\",\n            \"sample_rate\": 24000\n        }\n      \n    }\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "715b2c92-f8f0-447c-a54a-ed252d430749",
+      "name": "豆包语音"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/list/audios_test",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"prefix\": \"\",\n  \"limit\": 100,\n  \"offset\": 0\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        752,
+        560
+      ],
+      "id": "ca27c119-6a04-4bed-9a9f-57e02ff59e75",
+      "name": "supabase storage",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "获取存储桶的文件"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "caa1eedd-41dc-4afb-901c-f36edf78b716",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/audios_test/ {{ $json.fileName }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        896,
+        -16
+      ],
+      "id": "f2bdb12e-b4f5-4b4a-afde-8192266c8277",
+      "name": "公共存储桶",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 我的笔记\n [n8n 与 supabase storage 的链接](https://www.youtube.com/watch?v=Yy-QEtOH6Kc) 配置私有桶和公共桶",
+        "width": 448
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        448,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "0dcd584c-204c-41ad-8ca7-574f4f6790b2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        144,
+        400
+      ],
+      "id": "766b2244-7d1a-4525-b70e-d3f953377990",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "pTKXhzqQRGV1EDLq",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是一位专业的播客封面设计顾问，擅长从内容中提取视觉化元素，并生成播客封面图片的图片生成系统提示词。\n要求：只需要生成最终AI画图的提示词，不需要生成其他内容（100字内）。需要根据用户年龄：{{ $('准备上下文1').item.json.user.age }}岁，来生成合适的画风提示词。\n播客内容：{{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        208
+      ],
+      "id": "8971251c-80b7-4c5a-b1bd-f19948f61f63",
+      "name": "封面图提示词生成"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        160
+      ],
+      "id": "17b71fa6-3e37-4890-9380-9d68b4202458",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/images/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"Kwai-Kolors/Kolors\",\n  \"prompt\": {{ JSON.stringify($json.output) }},\n  \"negative_prompt\": \"<string>\",\n  \"image_size\": \"768x1024\",\n  \"batch_size\": 1,\n  \"seed\": 4999999999,\n  \"num_inference_steps\": 20,\n  \"guidance_scale\": 7.5,\n  \"cfg\": 10.05,\n  \"image\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\",\n  \"image2\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\",\n  \"image3\": \"https://inews.gtimg.com/om_bt/Os3eJ8u3SgB3Kd-zrRRhgfR5hUvdwcVPKUTNO6O7sZfUwAA/641\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        496,
+        208
+      ],
+      "id": "ad3271a0-4fe5-4c83-ae6e-19d69cadb479",
+      "name": "封面图片生成",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bc7asiW0ezmef3Ij",
+          "name": "火山方舟"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ $json.expertise }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        64
+      ],
+      "id": "013108e5-31ac-415e-83a2-fc0f61c663e8",
+      "name": "Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "jaS34VdIn0ePaxHA",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.images[0].url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        208
+      ],
+      "id": "d28413a7-c008-45ec-9c2e-dbb1392392de",
+      "name": "获取图片"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/audios_test/test/{{$now.toMillis()}}.png",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "image/png,image/*"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        912,
+        208
+      ],
+      "id": "36964788-6322-4636-acc7-ebaf9d544b74",
+      "name": "公共存储桶存储封面",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.voicv.com/v1/tts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"voiceId\": \"{{ $('查询活跃角色1').first().json.voiceId }}\",\n  \"text\": \"你好，小朋友，我是你的伙伴\",\n  \"format\": \"mp3\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        480,
+        -176
+      ],
+      "id": "affb884e-fdfb-46a2-b162-ddec5e10add4",
+      "name": "voicv文本转语音",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ifbSGR4nyl2DPQcl",
+          "name": "tang的voicv"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.data.audioUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        688,
+        -176
+      ],
+      "id": "72e73c8b-5991-423e-9949-739df707a7e1",
+      "name": "下载音频"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "audios_test",
+        "fileName": "={{ $json.key }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -400
+      ],
+      "id": "60247427-18cf-4952-80bd-6d1993802689",
+      "name": "Upload to supabase",
+      "credentials": {
+        "s3": {
+          "id": "zZfh7afJebC6FiCy",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "36536982-8596-4cc6-9aed-31f3f07df39c",
+              "leftValue": "={{ $('查询活跃角色1').first().json.voiceId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        256,
+        -80
+      ],
+      "id": "96e91aef-f363-4957-86d2-00c308f9ffcc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://riwghatatpylyrejmlvi.supabase.co/storage/v1/object/audios_test/podcasts/{{ $json.data.audioUrl.split(\"/\").last() }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        896,
+        -176
+      ],
+      "id": "6dedbeac-ac26-4eb0-b8f2-8c2b9cf622dd",
+      "name": "公共存储桶1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "BMaVw6lgctvlfeW4",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "查询活跃角色1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询活跃角色1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "查询所有用户1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询所有用户1": {
+      "main": [
+        [
+          {
+            "node": "查询用户记忆1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "循环角色结束1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备上下文1": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建 AI Prompt1": {
+      "main": [
+        [
+          {
+            "node": "AI 生成文章1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI 生成文章1": {
+      "main": [
+        [
+          {
+            "node": "封面图提示词生成",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI 生成文章1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询用户记忆1": {
+      "main": [
+        [
+          {
+            "node": "准备上下文1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "准备播客数据1": {
+      "main": [
+        [
+          {
+            "node": "保存播客1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存播客1": {
+      "main": [
+        [
+          {
+            "node": "保存推送记录1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "保存推送记录1": {
+      "main": [
+        [
+          {
+            "node": "循环角色结束1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64转音频": {
+      "main": [
+        [
+          {
+            "node": "公共存储桶",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "豆包语音": {
+      "main": [
+        [
+          {
+            "node": "Base64转音频",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "公共存储桶": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "封面图提示词生成",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "准备播客数据1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "封面图提示词生成": {
+      "main": [
+        [
+          {
+            "node": "封面图片生成",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "封面图片生成": {
+      "main": [
+        [
+          {
+            "node": "获取图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "构建 AI Prompt1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获取图片": {
+      "main": [
+        [
+          {
+            "node": "公共存储桶存储封面",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "公共存储桶存储封面": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "voicv文本转语音": {
+      "main": [
+        [
+          {
+            "node": "下载音频",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "下载音频": {
+      "main": [
+        [
+          {
+            "node": "公共存储桶1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to supabase": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "voicv文本转语音",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "豆包语音",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "公共存储桶1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "11f806ef-a2b7-4df6-8184-6423a9193b24",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "507f10cf690d73bcdaa5c53b8bcd34f70154f6ce8e9d123ad79d63eff7310a12"
+  },
+  "id": "2G9Qe7NHUTjRZW9wTq-IF",
+  "tags": []
+}

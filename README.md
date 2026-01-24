@@ -14,13 +14,24 @@
 
 ## 🚀 快速导航
 
+### 📦 项目交付
+
+- 📄 **[快速开始](./快速开始.md)** - **新手入门，从这里开始！**
+- 📄 **[交付总结](./交付总结.md)** - **完整的项目交付文档**
+- 📄 项目结构: `PROJECT_STRUCTURE.md`
+- 📄 问题追踪: `ISSUES.md`
+
 ### 核心功能
 
 1. **聊天系统** - AI 对话和记忆系统
+   - 📂 文档: `chat-system/`
    - 📂 代码: `supabase/functions/chat-handler/`
-   - 📄 工作流: `n8n.json`
-   - 📖 文档: `README_MEMORY_SYSTEM.md`
-   - 📖 架构: `.kiro/specs/chat-backend-architecture/`
+   - 📄 工作流: `chat-system/chat-workflow.json`
+   - 📖 入口: `chat-system/README.md`
+
+1.5. **短信验证** - 阿里云短信发送
+   - 📂 代码: `supabase/functions/supabase-aliyun-sms-sender/`
+   - 📖 文档: `supabase/functions/supabase-aliyun-sms-sender/README.md`
 
 2. **播客推送系统** - 每日个性化播客
    - 📂 文档: `podcast-system/`
@@ -31,6 +42,11 @@
    - 📂 提示词: `.kiro/prompts/`
    - 📖 规范: `.kiro/specs/multimodal-cognitive-adapter/`
    - 📖 入口: `.kiro/prompts/README.md`
+
+4. **引导式图片生成** - AI 智能引导创作
+   - 📂 规范: `.kiro/specs/guided-image-generation/`
+   - 📖 入口: `.kiro/specs/guided-image-generation/README.md`
+   - 📖 重构总结: `.kiro/specs/guided-image-generation/REFACTOR_COMPLETE.md`
 
 ### 数据库
 
@@ -74,6 +90,13 @@
 - ✅ **用户画像**: 年龄、兴趣、学习目标等
 - ✅ **年龄分层**: 根据年龄自动调整对话风格（6-9岁/10-12岁/13-15岁）
 
+### 短信验证系统
+
+- ✅ **阿里云短信**: 集成阿里云短信服务
+- ✅ **Auth Hook**: 适配 Supabase send_sms_hook
+- ✅ **签名验证**: 防止接口滥用
+- ✅ **国内支持**: 解决 Supabase 官方未支持国内短信服务商问题
+
 ### 播客推送系统
 
 - ✅ **定时推送**: 每天早上 7:00 自动推送
@@ -89,6 +112,15 @@
 - ✅ **对话适配**: 已实现对话模态的年龄分层
 - ✅ **播客适配**: 已实现播客模态的年龄分层
 - 🚧 **多模态扩展**: 预留图片、文章、音乐等模态接口
+
+### 引导式图片生成
+
+- ✅ **智能意图识别**: AI 自动识别用户想画画的意图
+- ✅ **引导式对话**: 通过自然对话收集主题、风格、情感
+- ✅ **智能识别**: 能够一次性识别多个信息
+- ✅ **图片生成**: 调用 DALL-E 3 API 生成图片
+- ✅ **实时通知**: Supabase Realtime 推送生成结果
+- 🚧 **待测试**: 重构完成，待生产环境测试
 
 ---
 
@@ -215,10 +247,13 @@ VALUES (
 - [x] AI 记忆提取和存储
 - [x] 播客推送 MVP
 - [x] 年龄阶段适配
+- [x] 引导式图片生成（重构完成）
+- [x] 多模态认知适配器
 
-### 进行中 🚧
+### 待完成 🚧
 
-- [ ] 播客系统测试和优化
+- [ ] 图片生成功能测试
+- [ ] 播客系统生产测试
 - [ ] 前端 Realtime 集成
 
 ### 计划中 📋
@@ -251,5 +286,18 @@ VALUES (
 ---
 
 **项目版本**: 1.0  
-**最后更新**: 2025-01-08  
+**最后更新**: 2025-01-23  
 **维护者**: 开发团队
+
+---
+
+## 📦 项目交付
+
+**完整的项目交付文档请查看**: [交付总结.md](./交付总结.md)
+
+该文档包含：
+- ✅ 已完成功能清单
+- 🚧 待完成工作
+- 📚 完整文档索引
+- 🚀 部署指南
+- 💡 给下一个 AI 的建议

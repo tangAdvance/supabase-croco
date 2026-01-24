@@ -34,6 +34,7 @@ CREATE TABLE public.characters (
   created_at timestamp without time zone DEFAULT now(),
   updated_at timestamp without time zone DEFAULT now(),
   greeting text,
+  voiceId text,
   CONSTRAINT characters_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.conversations (
@@ -96,13 +97,13 @@ CREATE TABLE public.podcasts (
   cover_image_url text,
   CONSTRAINT podcasts_pkey PRIMARY KEY (id)
 );
-CREATE TABLE public. (
+CREATE TABLE public.user_generated_images (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   character_id uuid NOT NULL,
   conversation_id uuid NOT NULL,
   image_url text NOT NULL,
-  thumbnail_url text,user_generated_images
+  thumbnail_url text,
   prompt text NOT NULL,
   style text NOT NULL,
   emotion text NOT NULL,
